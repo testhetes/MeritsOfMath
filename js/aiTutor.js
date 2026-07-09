@@ -182,7 +182,7 @@ RULES:
 2. CHECK THE STUDENT'S MATH carefully; gently and clearly correct any wrong step before moving on.
 3. Use LaTeX \\( ... \\) for ALL numbers and math.
 4. If the student has NOT reached the answer yet: guide ONE small step at a time — warm, simple, 2-3 short sentences — end with ONE clear question, and START your reply with "[STAY]".
-5. The MOMENT the student's answer equals the target (${challenge.expectedAnswer}): START your reply with "[SOLVED]", give a one-sentence congratulation, and STOP — do not ask another question and do not start a new problem.
+5. Declare success ONLY when the student clearly states their FINAL answer and it matches the target (${challenge.expectedAnswer}) — NOT when the target number merely appears somewhere in their working. When they truly have it: START your reply with "[SOLVED]", congratulate in one sentence, and STOP — no new question, no new problem. If they're still working or unsure, keep guiding with "[STAY]".
 
 ${alertStr}`;
     }
@@ -299,9 +299,18 @@ ${alertStr}`;
             }
 
             if (!isCorrect && includesTarget) {
-                const cleanExpected = challenge.expectedAnswer.replace(/[\\()]/g, '').trim().toUpperCase();
-                const isNumericAnswer = !isNaN(parseFloat(cleanExpected)) && cleanExpected.length < 5;
-                if (isNumericAnswer) isCorrect = true;
+                const cleanExpected = challenge.expectedAnswer.replace(/[\\()]/g, '').trim();
+                const targetNum = parseFloat(cleanExpected);
+                const isNumericAnswer = !isNaN(targetNum) && cleanExpected.length < 5 && !/,/.test(cleanExpected);
+                if (isNumericAnswer) {
+                    // Accept only if EVERY number the student wrote equals the target — so a bare
+                    // "2" or "x = 2" counts, but the target buried in working like "2 x 6 and 3x2"
+                    // (which has other numbers) does not.
+                    const nums = userInput.match(/-?\d+(?:\.\d+)?/g) || [];
+                    if (nums.length > 0 && nums.every(n => parseFloat(n) === targetNum)) {
+                        isCorrect = true;
+                    }
+                }
             }
 
             const userProvidedLiteral = userInput.includes(challenge.expectedAnswer.trim());
@@ -312,10 +321,13 @@ ${alertStr}`;
                 }
             }
 
-            // Fallback: multi-part answers ("2, 4", "e^2", "None") can't be checked numerically,
-            // so if the tutor explicitly marks it solved, trust that. The tutor is instructed to
-            // emit [SOLVED] only when the student truly reaches the target.
-            if (!isCorrect && aiSaysSolved) {
+            // Fallback for answers we can't verify numerically (multi-part like "2, 4", or forms
+            // like "e^2", "None"): trust an explicit [SOLVED]. We deliberately DON'T do this for
+            // simple numbers, which we verify above — otherwise an over-eager [SOLVED] on a digit
+            // spotted inside the student's working would advance wrongly.
+            const cleanExp = challenge.expectedAnswer.replace(/[\\()]/g, '').trim();
+            const answerIsSimpleNumber = !isNaN(parseFloat(cleanExp)) && cleanExp.length < 5 && !/,/.test(cleanExp);
+            if (!isCorrect && aiSaysSolved && !answerIsSimpleNumber) {
                 isCorrect = true;
             }
         } else {
