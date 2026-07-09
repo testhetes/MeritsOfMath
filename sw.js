@@ -8,7 +8,7 @@
 //
 // Bump CACHE when you ship changes so old assets are cleared.
 
-const CACHE = 'merits-v1';
+const CACHE = 'merits-v2';
 
 const APP_SHELL = [
     './',
