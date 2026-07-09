@@ -103,7 +103,8 @@ The student just reached the correct answer: ${challenge.expectedAnswer}.
 YOUR TASK:
 1. Congratulate them warmly and specifically (one short sentence).
 2. In one clear, simple sentence, restate the key idea they just used, with LaTeX \\( ... \\) for ALL math.
-3. START your response with "[SOLVED]". Keep it under 30 words, friendly and clear.`;
+3. Do NOT ask a question and do NOT start a new problem — the app moves to the next challenge automatically.
+4. START your response with "[SOLVED]". Keep it under 30 words, friendly and clear.`;
         }
 
         let strategy = "";
@@ -177,11 +178,11 @@ ${strategy}
 ${retrievedContext}
 
 RULES:
-1. CHECK THE STUDENT'S MATH carefully; gently and clearly correct any wrong step before moving on.
-2. Use LaTeX \\( ... \\) for ALL numbers and math.
-3. Be warm, clear, and simple. Short sentences. At most 2-3 sentences (~50 words). End with ONE clear question.
-4. Guide ONE small step at a time — never dump several steps at once.
-5. START your response with "[STAY]".
+1. Work ONLY on the challenge above. NEVER invent a new problem, switch topics, or ask what they want to do next — the app automatically moves to the next challenge once this one is solved.
+2. CHECK THE STUDENT'S MATH carefully; gently and clearly correct any wrong step before moving on.
+3. Use LaTeX \\( ... \\) for ALL numbers and math.
+4. If the student has NOT reached the answer yet: guide ONE small step at a time — warm, simple, 2-3 short sentences — end with ONE clear question, and START your reply with "[STAY]".
+5. The MOMENT the student's answer equals the target (${challenge.expectedAnswer}): START your reply with "[SOLVED]", give a one-sentence congratulation, and STOP — do not ask another question and do not start a new problem.
 
 ${alertStr}`;
     }
@@ -309,6 +310,13 @@ ${alertStr}`;
                 if (!aiConfirmed) {
                     isCorrect = false;
                 }
+            }
+
+            // Fallback: multi-part answers ("2, 4", "e^2", "None") can't be checked numerically,
+            // so if the tutor explicitly marks it solved, trust that. The tutor is instructed to
+            // emit [SOLVED] only when the student truly reaches the target.
+            if (!isCorrect && aiSaysSolved) {
+                isCorrect = true;
             }
         } else {
             isCorrect = aiSaysSolved || aiSaysCorrect;
