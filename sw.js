@@ -1,14 +1,18 @@
 // Service worker for Merits of Math.
 //
-// Strategy: cache-first for everything except the AI proxy. On the first successful
-// load the app shell AND the CDN libraries (MathJax, MathLive, mathjs, marked, fonts)
-// are cached, so the app works offline on subsequent visits — the key win for students
-// on slow / unstable connections. The /api/ AI calls always go to the network (and are
-// POSTs, which are never cached).
+// Strategy:
+//   - Same-origin app files (html/css/js/icons): STALE-WHILE-REVALIDATE. Serve the cached
+//     copy instantly (fast + offline), and fetch a fresh copy in the background so the NEXT
+//     load is up to date. This means code changes propagate on their own — no need to bump
+//     the cache version on every deploy.
+//   - Cross-origin CDN libraries (MathJax, MathLive, mathjs, marked, fonts): CACHE-FIRST,
+//     since they're versioned/immutable — once cached they never need refetching.
+//   - The AI proxy (/api/) is never intercepted; those calls always hit the network.
 //
-// Bump CACHE when you ship changes so old assets are cleared.
+// Only bump CACHE for a hard reset (e.g. to purge everything). Routine updates no longer
+// require it.
 
-const CACHE = 'merits-v2';
+const CACHE = 'merits-v3';
 
 const APP_SHELL = [
     './',
@@ -54,17 +58,34 @@ self.addEventListener('fetch', (event) => {
     // Never intercept the AI proxy — responses must stay live.
     if (url.pathname.startsWith('/api/')) return;
 
-    event.respondWith(
-        caches.match(req).then((cached) => {
-            if (cached) return cached;
-            return fetch(req).then((res) => {
-                // Cache successful same-origin responses and opaque cross-origin CDN assets.
-                if (res && (res.ok || res.type === 'opaque')) {
-                    const clone = res.clone();
-                    caches.open(CACHE).then((cache) => cache.put(req, clone));
-                }
-                return res;
-            }).catch(() => cached);
-        })
-    );
+    const sameOrigin = url.origin === self.location.origin;
+
+    if (sameOrigin) {
+        // Stale-while-revalidate: return cache now, refresh cache in the background.
+        event.respondWith(
+            caches.open(CACHE).then((cache) =>
+                cache.match(req).then((cached) => {
+                    const network = fetch(req).then((res) => {
+                        if (res && res.ok) cache.put(req, res.clone());
+                        return res;
+                    }).catch(() => cached);
+                    return cached || network;
+                })
+            )
+        );
+    } else {
+        // Cross-origin CDN assets: cache-first (immutable), cache on first fetch.
+        event.respondWith(
+            caches.match(req).then((cached) => {
+                if (cached) return cached;
+                return fetch(req).then((res) => {
+                    if (res && (res.ok || res.type === 'opaque')) {
+                        const clone = res.clone();
+                        caches.open(CACHE).then((cache) => cache.put(req, clone));
+                    }
+                    return res;
+                }).catch(() => cached);
+            })
+        );
+    }
 });

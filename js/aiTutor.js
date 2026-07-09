@@ -190,7 +190,7 @@ ${alertStr}`;
     async function generateResponse(userInput, battleHistory, challenge, isSolved = false, mistakeCount = 0) {
         const config = getActiveConfig();
         const isLocal = config.baseUrl.includes('localhost') || config.baseUrl.includes('127.0.0.1');
-        if (!config.key && !isLocal && !config.isProxy) return `[API KEY MISSING] Please set your API key in Settings.`;
+        if (!config.key && !isLocal && !config.isProxy) return `⚠️ The AI tutor isn't set up yet. Please configure it in Settings.`;
 
         try {
             const activeNodeId = window.BattleSystem ? window.BattleSystem.getState().currentBattleNodeId : null;
@@ -240,7 +240,11 @@ ${alertStr}`;
             });
 
             const data = await response.json();
-            if (data.error) throw new Error(data.error.message);
+            if (!response.ok || data.error || !data.choices) {
+                const detail = (data.error && data.error.message) || `HTTP ${response.status}`;
+                console.error('AI provider error:', detail, response.headers.get('X-AI-Error') || '');
+                return `⚠️ The tutor is busy right now. Please wait a moment and try again.`;
+            }
 
             let content = data.choices[0].message.content;
             // Strip reasoning-model scratchpads (<thinking> from some models, <think> from DeepSeek R1 etc.)
@@ -250,7 +254,7 @@ ${alertStr}`;
             return content;
         } catch (err) {
             console.error('AI Error:', err);
-            return `[AI Error]: ${err.message}`;
+            return `⚠️ The tutor is busy right now. Please wait a moment and try again.`;
         }
     }
 

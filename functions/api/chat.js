@@ -44,8 +44,10 @@ const PROVIDERS = {
     }
 };
 
-// Reliable + big free limit first (Gemini), then smartest backup (DeepSeek V3), then fast fallback (Groq).
-const DEFAULT_ORDER = ['gemini', 'openrouter', 'groq'];
+// Groq (llama-3.3-70b) is the reliable primary; OpenRouter (DeepSeek V3) is the backup.
+// Gemini is intentionally out of the default — add it back via PROVIDER_ORDER if its free
+// tier works for your account/region.
+const DEFAULT_ORDER = ['groq', 'openrouter'];
 
 export async function onRequestPost({ request, env }) {
     // Soft origin check — cheap abuse deterrent, not real auth.
@@ -131,7 +133,18 @@ export async function onRequestPost({ request, env }) {
         }
     }
 
-    return json({ error: { message: `AI unavailable — ${lastError.message}` } }, lastError.status);
+    // All providers failed. Show students a calm message; keep the technical detail in a
+    // header (and Cloudflare logs) for debugging instead of dumping raw quota/billing errors.
+    return new Response(
+        JSON.stringify({ error: { message: 'The tutor is busy right now. Please wait a moment and try again.' } }),
+        {
+            status: 503,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-AI-Error': String(lastError.message).slice(0, 300)
+            }
+        }
+    );
 }
 
 // Non-POST methods receive Cloudflare's automatic 405 (no handler defined for them).
