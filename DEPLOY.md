@@ -22,19 +22,23 @@ needs no changes — it always just calls `/api/chat`.
 
 | Env var | Provider | Notes | Get a key |
 |---|---|---|---|
-| `GROQ_API_KEY` | Groq | fast, generous free tier | https://console.groq.com |
-| `OPENROUTER_API_KEY` | OpenRouter | **free DeepSeek** & other `:free` models (~50–1000/day) | https://openrouter.ai/keys |
-| `GEMINI_API_KEY` | Google Gemini | **biggest free daily limit** (~1,500/day) | https://aistudio.google.com/apikey |
+| `GROQ_API_KEY` | Groq | fast, generous free tier — the primary | https://console.groq.com |
+| `OPENROUTER_API_KEY` | OpenRouter | free `:free` models — the fallback | https://openrouter.ai/keys |
+| `GEMINI_API_KEY` | Google Gemini | big free limit, but 429s in some regions | https://aistudio.google.com/apikey |
 
 Optional env vars:
 - `GROQ_MODEL` / `OPENROUTER_MODEL` / `GEMINI_MODEL` — override the pinned model.
-  Defaults: `llama-3.1-8b-instant`, `deepseek/deepseek-chat-v3-0324:free`, `gemini-2.0-flash`.
-- `PROVIDER_ORDER` — try-order, e.g. `groq,gemini,openrouter` (default `gemini,openrouter,groq`:
-  reliable + big free limit first (Gemini), then smartest backup (DeepSeek V3), then fast fallback (Groq)).
+  Defaults: `llama-3.3-70b-versatile`, `meta-llama/llama-3.3-70b-instruct:free`, `gemini-2.0-flash`
+  (primary and fallback are the same model on different infrastructure, so fallback replies
+  are indistinguishable).
+- `PROVIDER_ORDER` — try-order (default `groq,openrouter`; add `gemini` only if its free
+  tier works for your account/region).
 
-Note on DeepSeek: DeepSeek's *own* API is paid (cheap, not free). The **free** way to use
-DeepSeek is via OpenRouter's `:free` model above. Avoid the R1 *reasoning* model for tutoring —
-it's slower and emits reasoning scratchpads; the default `deepseek-chat-v3` is the better fit.
+Model notes: free-tier model slugs get retired without warning (OpenRouter's free DeepSeek
+was removed in 2026 — a 404 naming a "paid version" means exactly this; pick a current
+`:free` slug from https://openrouter.ai/models and set `OPENROUTER_MODEL`). Avoid *reasoning*
+models (R1, gpt-oss) for tutoring: with this app's small token budget they spend everything
+on hidden thinking and return empty replies.
 
 The `X-AI-Provider` response header tells you which provider actually served each reply
 (handy for debugging fallback).

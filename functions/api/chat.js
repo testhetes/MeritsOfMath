@@ -28,14 +28,16 @@ const PROVIDERS = {
     groq: {
         url: 'https://api.groq.com/openai/v1/chat/completions',
         keyEnv: 'GROQ_API_KEY',
-        model: (env) => env.GROQ_MODEL || 'llama-3.1-8b-instant'
+        model: (env) => env.GROQ_MODEL || 'llama-3.3-70b-versatile'
     },
     openrouter: {
         url: 'https://openrouter.ai/api/v1/chat/completions',
         keyEnv: 'OPENROUTER_API_KEY',
-        // Free DeepSeek chat (not the R1 reasoning model — this one is faster and doesn't
-        // emit <think> blocks, which suits the Socratic tutor better).
-        model: (env) => env.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3-0324:free'
+        // Same model as the Groq primary, so fallback replies are indistinguishable from
+        // primary ones. (DeepSeek's free tier was removed from OpenRouter in 2026 — if this
+        // slug ever 404s the same way, check https://openrouter.ai/models?q=free for a
+        // current :free model and set OPENROUTER_MODEL.)
+        model: (env) => env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free'
     },
     gemini: {
         url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
