@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merits of Math — AI Connection Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; background: #0f172a; color: #e2e8f0; }
+        h1 { font-size: 1.3rem; }
+        button { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: none; background: #818cf8; color: white; cursor: pointer; }
+        pre { background: #1e293b; padding: 14px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; font-size: 0.85rem; }
+        .ok { color: #34d399; } .bad { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>AI Connection Test</h1>
+    <p>Click the button, wait a few seconds, then send a screenshot of this page.</p>
+    <button id="run">Run test</button>
+    <pre id="out">Not run yet.</pre>
+    <script>
+        document.getElementById('run').onclick = async () => {
+            const out = document.getElementById('out');
+            out.textContent = 'Testing...';
+            const lines = [];
+            lines.push('Time: ' + new Date().toISOString());
+            lines.push('Browser: ' + navigator.userAgent);
+            const t0 = Date.now();
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: [{ role: 'user', content: 'Say only: hello' }], max_tokens: 20 })
+                });
+                lines.push('HTTP status: ' + res.status);
+                lines.push('Served by provider: ' + (res.headers.get('X-AI-Provider') || '(none)'));
+                lines.push('Error detail: ' + (res.headers.get('X-AI-Error') || '(none)'));
+                lines.push('Round trip: ' + (Date.now() - t0) + ' ms');
+                const text = await res.text();
+                lines.push('Body (first 400 chars):');
+                lines.push(text.slice(0, 400));
+                out.innerHTML = '';
+                out.textContent = lines.join('\n');
+                out.className = res.ok ? 'ok' : 'bad';
+            } catch (e) {
+                lines.push('FETCH FAILED (request never got a response)');
+                lines.push('Error: ' + e.message);
+                lines.push('Round trip: ' + (Date.now() - t0) + ' ms');
+                out.textContent = lines.join('\n');
+                out.className = 'bad';
+            }
+        };
+    </script>
+</body>
+</html>
