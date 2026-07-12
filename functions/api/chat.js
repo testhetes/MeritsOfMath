@@ -11,45 +11,60 @@
 //
 // Env vars (set in Cloudflare Pages → Settings → Environment variables, mark secret):
 //   GROQ_API_KEY         Groq key (gsk_...)                        https://console.groq.com
-//   OPENROUTER_API_KEY   OpenRouter key (free DeepSeek etc.)       https://openrouter.ai/keys
-//   GEMINI_API_KEY       Google AI Studio key (biggest free tier)  https://aistudio.google.com/apikey
+//   OPENROUTER_API_KEY   OpenRouter key                            https://openrouter.ai/keys
+//   GEMINI_API_KEY       Google AI Studio key                      https://aistudio.google.com/apikey
+// Bindings (Pages project → Settings → Bindings → Add → Workers AI, name it "AI"):
+//   AI                   enables the "workersai" provider — Llama 70B running on your own
+//                        Cloudflare account's daily allowance (not shared with other users,
+//                        so it's the most predictable free layer; ideal last resort).
 // Optional overrides:
-//   GROQ_MODEL / OPENROUTER_MODEL / GEMINI_MODEL   pin a different model per provider
-//   PROVIDER_ORDER   comma list, e.g. "groq,gemini,openrouter" (default: gemini,openrouter,groq
-//                    — reliable + big free limit first, then smartest backup, then fast fallback)
+//   GROQ_MODEL / OPENROUTER_MODEL / GEMINI_MODEL / WORKERSAI_MODEL   pin a different model
+//   PROVIDER_ORDER   comma list (default: groq,openrouter,workersai)
 //   ALLOWED_ORIGIN   e.g. https://meritsofmath.pages.dev — soft-blocks other origins
 
 const MAX_TOKENS_CAP = 300;   // hard ceiling so a leaked endpoint can't run up huge bills
 const MAX_MESSAGES = 40;      // cap conversation size per request
 
-// Each provider exposes an OpenAI-compatible /chat/completions endpoint, so the response
+// HTTP providers expose an OpenAI-compatible /chat/completions endpoint, so the response
 // shape ({ choices:[{ message:{ content }}] }) is identical and passes straight through.
+// "workersai" is different: it runs on Cloudflare's own GPUs via the AI binding (env.AI),
+// no external API involved, and its response is normalized to the same shape below.
 const PROVIDERS = {
     groq: {
         url: 'https://api.groq.com/openai/v1/chat/completions',
-        keyEnv: 'GROQ_API_KEY',
+        available: (env) => !!env.GROQ_API_KEY,
+        key: (env) => env.GROQ_API_KEY,
         model: (env) => env.GROQ_MODEL || 'llama-3.3-70b-versatile'
     },
     openrouter: {
         url: 'https://openrouter.ai/api/v1/chat/completions',
-        keyEnv: 'OPENROUTER_API_KEY',
-        // Same model as the Groq primary, so fallback replies are indistinguishable from
-        // primary ones. (DeepSeek's free tier was removed from OpenRouter in 2026 — if this
-        // slug ever 404s the same way, check https://openrouter.ai/models?q=free for a
-        // current :free model and set OPENROUTER_MODEL.)
+        available: (env) => !!env.OPENROUTER_API_KEY,
+        key: (env) => env.OPENROUTER_API_KEY,
+        // Same model as the Groq primary, so fallback replies are indistinguishable. NOTE:
+        // OpenRouter :free models are shared capacity and often rate-limited; treat this as
+        // a best-effort middle layer. If the slug 404s ("paid version available"), pick a
+        // current :free model from https://openrouter.ai/models and set OPENROUTER_MODEL.
         model: (env) => env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free'
     },
     gemini: {
         url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-        keyEnv: 'GEMINI_API_KEY',
+        available: (env) => !!env.GEMINI_API_KEY,
+        key: (env) => env.GEMINI_API_KEY,
         model: (env) => env.GEMINI_MODEL || 'gemini-2.0-flash'
+    },
+    workersai: {
+        binding: true,
+        available: (env) => !!env.AI,
+        // Same Llama 70B family, served from this Cloudflare account's own daily allowance —
+        // not shared with strangers, so it's the most predictable layer in the chain.
+        model: (env) => env.WORKERSAI_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
     }
 };
 
-// Groq (llama-3.3-70b) is the reliable primary; OpenRouter (DeepSeek V3) is the backup.
-// Gemini is intentionally out of the default — add it back via PROVIDER_ORDER if its free
-// tier works for your account/region.
-const DEFAULT_ORDER = ['groq', 'openrouter'];
+// Groq is the fast primary; OpenRouter is a best-effort middle layer (shared free pool);
+// Workers AI is the dependable last resort on our own allowance. Gemini is out of the
+// default — add it via PROVIDER_ORDER if its free tier works for your account/region.
+const DEFAULT_ORDER = ['groq', 'openrouter', 'workersai'];
 
 export async function onRequestPost({ request, env }) {
     // Soft origin check — cheap abuse deterrent, not real auth.
@@ -87,20 +102,47 @@ export async function onRequestPost({ request, env }) {
         .map((n) => n.trim())
         .filter((n) => PROVIDERS[n]);
     if (forced && PROVIDERS[forced]) order = [forced];
-    order = order.filter((n) => env[PROVIDERS[n].keyEnv]);
+    order = order.filter((n) => PROVIDERS[n].available(env));
 
     if (order.length === 0) {
-        return json({ error: { message: 'No AI provider is configured on the server (set at least one *_API_KEY).' } }, 500);
+        return json({ error: { message: 'No AI provider is configured on the server (set at least one *_API_KEY, or add the Workers AI binding).' } }, 500);
     }
 
     let lastError = { status: 502, message: 'All providers failed' };
 
     for (const name of order) {
         const p = PROVIDERS[name];
+
+        if (p.binding) {
+            // Workers AI: runs on Cloudflare's GPUs via env.AI — no HTTP, no external key.
+            try {
+                const result = await env.AI.run(p.model(env), {
+                    messages,
+                    temperature,
+                    max_tokens: maxTokens
+                });
+                // Normalize to the OpenAI response shape the frontend expects.
+                return new Response(JSON.stringify({
+                    model: p.model(env),
+                    choices: [{
+                        index: 0,
+                        message: { role: 'assistant', content: result.response || '' },
+                        finish_reason: 'stop'
+                    }]
+                }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json', 'X-AI-Provider': name }
+                });
+            } catch (e) {
+                lastError = { status: 502, message: `${name}: ${String(e && e.message).slice(0, 200)}` };
+                continue; // try next provider
+            }
+        }
+
         const payload = { model: p.model(env), messages, temperature, max_tokens: maxTokens };
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${env[p.keyEnv]}`
+            'Authorization': `Bearer ${p.key(env)}`
         };
         // OpenRouter uses these for attribution/ranking (optional).
         if (name === 'openrouter' && allowed) {

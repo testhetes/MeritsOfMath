@@ -20,19 +20,21 @@ rate-limited or erroring, falls through to the next. **Configure at least one; a
 to stack free tiers** for more effective capacity across many students. The frontend
 needs no changes — it always just calls `/api/chat`.
 
-| Env var | Provider | Notes | Get a key |
+| Config | Provider | Notes | Setup |
 |---|---|---|---|
-| `GROQ_API_KEY` | Groq | fast, generous free tier — the primary | https://console.groq.com |
-| `OPENROUTER_API_KEY` | OpenRouter | free `:free` models — the fallback | https://openrouter.ai/keys |
-| `GEMINI_API_KEY` | Google Gemini | big free limit, but 429s in some regions | https://aistudio.google.com/apikey |
+| `GROQ_API_KEY` (env var) | Groq | fast, generous free tier — the primary | https://console.groq.com |
+| `OPENROUTER_API_KEY` (env var) | OpenRouter | shared free pool, often rate-limited — best-effort middle layer | https://openrouter.ai/keys |
+| `AI` (binding, not env var) | Cloudflare Workers AI | runs on **your own account's daily allowance** — most predictable layer, ideal last resort | Pages project → **Settings → Bindings → Add → Workers AI**, name it `AI`, redeploy |
+| `GEMINI_API_KEY` (env var) | Google Gemini | big free limit, but 429s in some regions | https://aistudio.google.com/apikey |
 
 Optional env vars:
-- `GROQ_MODEL` / `OPENROUTER_MODEL` / `GEMINI_MODEL` — override the pinned model.
-  Defaults: `llama-3.3-70b-versatile`, `meta-llama/llama-3.3-70b-instruct:free`, `gemini-2.0-flash`
-  (primary and fallback are the same model on different infrastructure, so fallback replies
-  are indistinguishable).
-- `PROVIDER_ORDER` — try-order (default `groq,openrouter`; add `gemini` only if its free
-  tier works for your account/region).
+- `GROQ_MODEL` / `OPENROUTER_MODEL` / `GEMINI_MODEL` / `WORKERSAI_MODEL` — override the pinned
+  model. Defaults: `llama-3.3-70b-versatile`, `meta-llama/llama-3.3-70b-instruct:free`,
+  `gemini-2.0-flash`, `@cf/meta/llama-3.3-70b-instruct-fp8-fast` — the Groq/OpenRouter/Workers AI
+  defaults are all the same Llama 3.3 70B model on different infrastructure, so fallback
+  replies are indistinguishable from primary ones.
+- `PROVIDER_ORDER` — try-order (default `groq,openrouter,workersai`; add `gemini` only if its
+  free tier works for your account/region).
 
 Model notes: free-tier model slugs get retired without warning (OpenRouter's free DeepSeek
 was removed in 2026 — a 404 naming a "paid version" means exactly this; pick a current
