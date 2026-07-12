@@ -33,6 +33,7 @@
                 });
                 lines.push('HTTP status: ' + res.status);
                 lines.push('Served by provider: ' + (res.headers.get('X-AI-Provider') || '(none)'));
+                lines.push('Provider chain: ' + (res.headers.get('X-AI-Chain') || '(none)'));
                 lines.push('Error detail: ' + (res.headers.get('X-AI-Error') || '(none)'));
                 lines.push('Round trip: ' + (Date.now() - t0) + ' ms');
                 const text = await res.text();

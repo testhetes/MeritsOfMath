@@ -229,7 +229,7 @@ ${alertStr}`;
                 }
             }
 
-            const response = await fetch(fetchUrl, {
+            const requestInit = {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
@@ -238,7 +238,15 @@ ${alertStr}`;
                     temperature: 0.1,
                     max_tokens: 250
                 })
-            });
+            };
+
+            let response = await fetch(fetchUrl, requestInit);
+            if (!response.ok) {
+                // Transient blip (rate limit etc.) — wait briefly and retry once before
+                // giving up, so momentary hiccups never reach the student.
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                response = await fetch(fetchUrl, requestInit);
+            }
 
             const data = await response.json();
             if (!response.ok || data.error || !data.choices) {

@@ -94,13 +94,18 @@ export async function onRequestPost({ request, env }) {
     const temperature = typeof body.temperature === 'number' ? body.temperature : 0.1;
     const maxTokens = Math.min(Number(body.max_tokens) || 150, MAX_TOKENS_CAP);
 
-    // Build the provider try-order: honor PROVIDER_ORDER, else default; then keep only
-    // providers that actually have a key configured. Optional ?provider= forces one (debug).
+    // Build the provider try-order. PROVIDER_ORDER (or the default) is a PREFERENCE, not a
+    // whitelist: any other provider that is configured gets appended as a last resort, so a
+    // stale order env var can never silently exclude a working provider from the chain.
+    // Optional ?provider= forces exactly one (debug).
     const url = new URL(request.url);
     const forced = url.searchParams.get('provider');
     let order = (env.PROVIDER_ORDER ? env.PROVIDER_ORDER.split(',') : DEFAULT_ORDER)
         .map((n) => n.trim())
         .filter((n) => PROVIDERS[n]);
+    for (const name of Object.keys(PROVIDERS)) {
+        if (!order.includes(name)) order.push(name);
+    }
     if (forced && PROVIDERS[forced]) order = [forced];
     order = order.filter((n) => PROVIDERS[n].available(env));
 
@@ -109,6 +114,13 @@ export async function onRequestPost({ request, env }) {
     }
 
     let lastError = { status: 502, message: 'All providers failed' };
+    const chainHeader = order.join(',');
+
+    // Up to two passes over the chain: per-minute rate limits are often gone within a
+    // second or two, so one short-delay retry absorbs most transient blips server-side
+    // instead of surfacing "tutor is busy" to the student.
+    for (let pass = 0; pass < 2; pass++) {
+        if (pass > 0) await new Promise((resolve) => setTimeout(resolve, 1300));
 
     for (const name of order) {
         const p = PROVIDERS[name];
@@ -131,7 +143,7 @@ export async function onRequestPost({ request, env }) {
                     }]
                 }), {
                     status: 200,
-                    headers: { 'Content-Type': 'application/json', 'X-AI-Provider': name }
+                    headers: { 'Content-Type': 'application/json', 'X-AI-Provider': name, 'X-AI-Chain': chainHeader }
                 });
             } catch (e) {
                 lastError = { status: 502, message: `${name}: ${String(e && e.message).slice(0, 200)}` };
@@ -163,7 +175,7 @@ export async function onRequestPost({ request, env }) {
             const text = await res.text();
             return new Response(text, {
                 status: 200,
-                headers: { 'Content-Type': 'application/json', 'X-AI-Provider': name }
+                headers: { 'Content-Type': 'application/json', 'X-AI-Provider': name, 'X-AI-Chain': chainHeader }
             });
         }
 
@@ -176,16 +188,18 @@ export async function onRequestPost({ request, env }) {
             continue;
         }
     }
+    } // end retry passes
 
-    // All providers failed. Show students a calm message; keep the technical detail in a
-    // header (and Cloudflare logs) for debugging instead of dumping raw quota/billing errors.
+    // All providers failed twice. Show students a calm message; keep the technical detail in
+    // headers (and Cloudflare logs) for debugging instead of dumping raw quota/billing errors.
     return new Response(
         JSON.stringify({ error: { message: 'The tutor is busy right now. Please wait a moment and try again.' } }),
         {
             status: 503,
             headers: {
                 'Content-Type': 'application/json',
-                'X-AI-Error': String(lastError.message).slice(0, 300)
+                'X-AI-Error': String(lastError.message).slice(0, 300),
+                'X-AI-Chain': chainHeader
             }
         }
     );
