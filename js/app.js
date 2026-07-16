@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const onboardingView = document.getElementById('onboarding-view');
     const appContainer = document.getElementById('app');
 
+    // Restore any saved profile BEFORE deciding whether to show onboarding — otherwise a
+    // returning student is sent through onboarding again and the dashboard never populates.
+    window.ProgressionManager.init();
+    window.ProgressionManager.syncDBWithProfile();
+
     // Assesses if a profile exists to skip the onboarding layout step
     function initOnboarding() {
         window.addEventListener('resize', () => {
@@ -192,6 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
             confSlider.min = 0;
             confSlider.max = 1000;
             confSlider.step = 1;
+            // The HTML default of "3" was written for the old 1-5 scale; on the 0-1000
+            // scale it lands at confidence 1. Start at the middle (level 3) instead.
+            confSlider.value = 500;
 
             const updateSliderUI = (isSnapping = false) => {
                 const val = parseInt(confSlider.value);

@@ -33,8 +33,10 @@ Optional env vars:
   `gemini-2.0-flash`, `@cf/meta/llama-3.3-70b-instruct-fp8-fast` — the Groq/OpenRouter/Workers AI
   defaults are all the same Llama 3.3 70B model on different infrastructure, so fallback
   replies are indistinguishable from primary ones.
-- `PROVIDER_ORDER` — try-order (default `groq,openrouter,workersai`; add `gemini` only if its
-  free tier works for your account/region).
+- `PROVIDER_ORDER` — preferred try-order (default `groq,workersai,openrouter` — the
+  dependable per-account Workers AI layer sits second, ahead of OpenRouter's often-limited
+  shared pool). This is a preference, not a whitelist: every configured provider is
+  auto-appended as a last resort, so a stale value can't exclude a working layer.
 
 Model notes: free-tier model slugs get retired without warning (OpenRouter's free DeepSeek
 was removed in 2026 — a 404 naming a "paid version" means exactly this; pick a current

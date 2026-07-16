@@ -72,16 +72,22 @@ window.DashboardStats = {
             const recommendedCountEl = document.getElementById('recommended-action-count');
             
             if (diagnosticCard) {
-                let recommendNode = weakestNode;
+                const nodes = userProfile.nodes || {};
+
+                // Fall back to the first unlocked node (or the very first node) so a brand-new
+                // profile with zero practiced concepts still gets a working recommendation —
+                // previously this rendered an empty card whose button had no click handler.
+                let recommendNode = weakestNode
+                    || skillNodes.find(n => nodes[n.id] && nodes[n.id].status !== 'locked')
+                    || skillNodes[0];
                 let title = "";
                 let body = "";
                 let tag = "";
                 let btnText = "Start Practice";
 
-                const nodes = userProfile.nodes || {};
                 const rMastery = (recommendNode && nodes[recommendNode.id]) ? nodes[recommendNode.id].mastery : 0;
 
-                if (recommendNode && rMastery > 0 && rMastery < 85) {
+                if (recommendNode) {
                     title = `<i class="fa-solid fa-microchip"></i> Adaptive Priority`;
                     tag = `<span class="tag tag-red">Pattern-Based: ${rMastery}%</span>`;
                     body = `Intelligence analysis suggests prioritizing <strong>${recommendNode.label}</strong> to optimize your mastery path.`;

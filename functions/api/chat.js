@@ -19,7 +19,8 @@
 //                        so it's the most predictable free layer; ideal last resort).
 // Optional overrides:
 //   GROQ_MODEL / OPENROUTER_MODEL / GEMINI_MODEL / WORKERSAI_MODEL   pin a different model
-//   PROVIDER_ORDER   comma list (default: groq,openrouter,workersai)
+//   PROVIDER_ORDER   preferred comma list (default: groq,workersai,openrouter); configured
+//                    providers not listed are auto-appended as last resorts
 //   ALLOWED_ORIGIN   e.g. https://meritsofmath.pages.dev — soft-blocks other origins
 
 const MAX_TOKENS_CAP = 300;   // hard ceiling so a leaked endpoint can't run up huge bills
@@ -61,10 +62,13 @@ const PROVIDERS = {
     }
 };
 
-// Groq is the fast primary; OpenRouter is a best-effort middle layer (shared free pool);
-// Workers AI is the dependable last resort on our own allowance. Gemini is out of the
-// default — add it via PROVIDER_ORDER if its free tier works for your account/region.
-const DEFAULT_ORDER = ['groq', 'openrouter', 'workersai'];
+// Groq is the fast primary. Workers AI comes SECOND: it runs on this account's own
+// allowance (nobody else's traffic can exhaust it), so when Groq blips — which happens
+// per-IP at busy Cloudflare edges, i.e. exactly when "other devices" report failures —
+// the dependable layer catches it immediately instead of after a doomed hop through
+// OpenRouter's often-rate-limited shared pool. Gemini is out of the default — add it
+// via PROVIDER_ORDER if its free tier works for your account/region.
+const DEFAULT_ORDER = ['groq', 'workersai', 'openrouter'];
 
 export async function onRequestPost({ request, env }) {
     // Soft origin check — cheap abuse deterrent, not real auth.

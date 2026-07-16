@@ -873,10 +873,29 @@ body {
 }
 
 /* ========== Battle Arena ========== */
+/* The battle view fills the content area exactly (no outer page scroll), so the
+   header and input bar stay pinned and ONLY the chat list scrolls. Sizing comes
+   from flex, not viewport math — which broke as soon as parent padding changed. */
+#battle-view.active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 20px 24px;
+    /* No slide-in here: the fadeIn translateY leaves this fixed-height view offset,
+       which reintroduces outer scroll and unpins the header/input. */
+    animation: none;
+    transform: none;
+}
+
 .battle-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 88px);
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
     border-radius: var(--radius-lg);
     background-color: var(--bg-main);
     box-shadow: var(--clay-base);
@@ -1394,12 +1413,46 @@ math-field::part(menu-toggle) {
         grid-template-columns: 1fr;
     }
 
-    .battle-container {
-        height: calc(100vh - 140px);
+    /* Onboarding steps (esp. the accordion step) can be taller than a phone screen;
+       without this the Next/Finish buttons are unreachable for new mobile users. */
+    .onboarding-card {
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
+    }
+
+    #battle-view.active {
+        padding: 10px;
+    }
+
+    .battle-header {
+        padding: 12px 16px;
+        gap: 8px;
+    }
+
+    .chat-container {
+        padding: 16px 12px;
+    }
+
+    .chat-input-area {
+        padding: 10px 12px;
+    }
+
+    /* The tree's %-based node positions need real width; give the map a panable
+       canvas instead of letting ~180px-wide nodes collide in a 300px column. */
+    #skilltree-view {
+        overflow-x: auto;
     }
 
     .skill-tree-container {
-        height: 420px;
+        min-width: 640px;
+        height: 460px;
+    }
+
+    .tree-node {
+        font-size: 12px;
+        padding: 8px 12px;
+        max-width: 150px;
     }
 
     .node-detail-panel {
