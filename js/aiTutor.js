@@ -97,6 +97,10 @@ window.AiTutor = (function () {
 
     // Formulates the system prompt, pedagogical strategy, and auditor rules injected with retrieved curriculum memory
     function buildPrompt(challenge, isSolved = false, mistakeCount = 0, userInput = "", retrievedContext = "") {
+        // Reply in the student's chosen interface language (math/LaTeX stays universal).
+        const replyLang = (window.I18n && window.I18n.getLang() === 'vi') ? 'Vietnamese' : 'English';
+        const langRule = `\nLANGUAGE: Write ALL of your prose to the student in ${replyLang}. Keep every number, variable, and formula in LaTeX \\( ... \\) exactly as-is.`;
+
         if (isSolved) {
             return `YOU ARE A WARM, ENCOURAGING MATH TUTOR.
 The student just reached the correct answer: ${challenge.expectedAnswer}.
@@ -104,7 +108,7 @@ YOUR TASK:
 1. Congratulate them warmly and specifically (one short sentence).
 2. In one clear, simple sentence, restate the key idea they just used, with LaTeX \\( ... \\) for ALL math.
 3. Do NOT ask a question and do NOT start a new problem — the app moves to the next challenge automatically.
-4. START your response with "[SOLVED]". Keep it under 30 words, friendly and clear.`;
+4. START your response with "[SOLVED]". Keep it under 30 words, friendly and clear.${langRule}`;
         }
 
         let strategy = "";
@@ -183,6 +187,7 @@ RULES:
 3. Use LaTeX \\( ... \\) for ALL numbers and math.
 4. If the student has NOT reached the answer yet: guide ONE small step at a time — warm, simple, 2-3 short sentences — end with ONE clear question, and START your reply with "[STAY]".
 5. Declare success ONLY when the student clearly states their FINAL answer and it matches the target (${challenge.expectedAnswer}) — NOT when the target number merely appears somewhere in their working. When they truly have it: START your reply with "[SOLVED]", congratulate in one sentence, and STOP — no new question, no new problem. If they're still working or unsure, keep guiding with "[STAY]".
+${langRule}
 
 ${alertStr}`;
     }
@@ -191,7 +196,7 @@ ${alertStr}`;
     async function generateResponse(userInput, battleHistory, challenge, isSolved = false, mistakeCount = 0) {
         const config = getActiveConfig();
         const isLocal = config.baseUrl.includes('localhost') || config.baseUrl.includes('127.0.0.1');
-        if (!config.key && !isLocal && !config.isProxy) return `⚠️ The AI tutor isn't set up yet. Please configure it in Settings.`;
+        if (!config.key && !isLocal && !config.isProxy) return window.I18n.t('aiTutor.notSetup');
 
         try {
             const activeNodeId = window.BattleSystem ? window.BattleSystem.getState().currentBattleNodeId : null;
@@ -252,7 +257,7 @@ ${alertStr}`;
             if (!response.ok || data.error || !data.choices) {
                 const detail = (data.error && data.error.message) || `HTTP ${response.status}`;
                 console.error('AI provider error:', detail, response.headers.get('X-AI-Error') || '');
-                return `⚠️ The tutor is busy right now. Please wait a moment and try again.`;
+                return window.I18n.t('aiTutor.busy');
             }
 
             let content = data.choices[0].message.content;
@@ -263,7 +268,7 @@ ${alertStr}`;
             return content;
         } catch (err) {
             console.error('AI Error:', err);
-            return `⚠️ The tutor is busy right now. Please wait a moment and try again.`;
+            return window.I18n.t('aiTutor.busy');
         }
     }
 

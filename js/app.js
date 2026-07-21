@@ -17,6 +17,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const onboardingView = document.getElementById('onboarding-view');
     const appContainer = document.getElementById('app');
+    const t = (k, v) => window.I18n.t(k, v);
+
+    // Re-render dynamic (JS-generated) UI when the language changes. Static [data-i18n]
+    // markup is handled by I18n.apply(); these functions rebuild the computed strings.
+    document.addEventListener('langchange', () => {
+        if (window.ProgressionManager && window.ProgressionManager.getProfile()) {
+            window.ProgressionManager.syncDBWithProfile();
+        }
+        if (window.DashboardStats) window.DashboardStats.updateStats();
+        if (window.SkillTree && window.SkillTree.render) window.SkillTree.render();
+    });
 
     // Restore any saved profile BEFORE deciding whether to show onboarding — otherwise a
     // returning student is sent through onboarding again and the dashboard never populates.
@@ -300,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (nextStep === "2") {
                     const name = document.getElementById('ob-name').value.trim();
                     if (!name) {
-                        window.UIHelpers.showNotification("Identify Yourself", "Please enter your name to proceed.", "warning");
+                        window.UIHelpers.showNotification(t('ob.needNameTitle'), t('ob.needNameMsg'), "warning");
                         return;
                     }
                 }
@@ -333,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const finalNameValue = finalNameInput ? finalNameInput.value.trim() : "";
 
             if (!finalNameValue || finalNameValue === "") {
-                window.UIHelpers.showNotification("Personalization Required", "Please go back to Step 1 and enter your name.", "warning");
+                window.UIHelpers.showNotification(t('ob.needNameTitle'), t('ob.needNameBackMsg'), "warning");
                 showStep(1);
                 return;
             }
@@ -587,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isReady = otherNodes.every(n => (userProfile.nodes[n.id]?.mastery || 0) >= 100);
 
                 if (!isReady) {
-                    window.UIHelpers.showNotification("Final Exam is LOCKED", "You must master all other concepts to 100% before taking the final assessment.", "error");
+                    window.UIHelpers.showNotification(t('tree.finalLockedTitle'), t('tree.finalLockedMsg'), "error");
                     return;
                 }
             }
@@ -614,10 +625,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const statusEl = document.getElementById('node-detail-status');
             const statusMap = {
-                mastered: { text: `✅ Mastered — ${node.mastery}%`, class: 'status-mastered' },
-                partial: { text: `⚠️ In Progress — ${node.mastery}%`, class: 'status-partial' },
-                critical: { text: `🔴 Needs Work — ${node.mastery}%`, class: 'status-critical' },
-                locked: { text: '🔒 Locked', class: 'status-locked' }
+                mastered: { text: t('tree.status.mastered', { pct: node.mastery }), class: 'status-mastered' },
+                partial: { text: t('tree.status.partial', { pct: node.mastery }), class: 'status-partial' },
+                critical: { text: t('tree.status.critical', { pct: node.mastery }), class: 'status-critical' },
+                locked: { text: t('tree.status.locked'), class: 'status-locked' }
             };
             const statusInfo = statusMap[node.status];
             statusEl.textContent = statusInfo.text;
@@ -631,9 +642,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (node.status !== 'locked') {
                 const btn = document.createElement('button');
                 btn.className = 'btn btn-primary';
-                btn.innerHTML = node.status === 'critical'
-                    ? '<i class="fa-solid fa-gamepad"></i> Start Socratic Battle'
-                    : '<i class="fa-solid fa-gamepad"></i> Practice This Skill';
+                const btnLabel = node.status === 'critical' ? t('tree.startBattle') : t('tree.practiceSkill');
+                btn.innerHTML = `<i class="fa-solid fa-gamepad"></i> ${btnLabel}`;
                 btn.addEventListener('click', () => window.BattleArena.startBattle(node.id));
                 actionsEl.appendChild(btn);
             } else {
@@ -644,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     .join(', ');
                 const info = document.createElement('p');
                 info.style.cssText = 'color: var(--text-tertiary); font-size: 14px; font-style: italic; margin: 0;';
-                info.textContent = `Requires mastery of: ${prereqNames}`;
+                info.textContent = t('tree.requires', { names: prereqNames });
                 actionsEl.appendChild(info);
             }
         },
@@ -728,8 +738,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const node = result.node;
             if (!node) return;
 
-            document.getElementById('battle-title').textContent = `Socratic Battle: ${node.label}`;
-            document.getElementById('battle-topic').textContent = `Topic: ${node.lesson.title}`;
+            document.getElementById('battle-title').textContent = t('battle.socraticTitle', { name: node.label });
+            document.getElementById('battle-topic').textContent = t('battle.topic', { name: node.lesson.title });
 
             this.navBattleBtn.disabled = false;
             this.battleBadge.classList.remove('hidden');
@@ -757,14 +767,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const firstChallenge = window.BattleSystem.getCurrentChallenge();
             if (firstChallenge) {
                 const intro = `
-                    <p>🤖 Welcome to the <strong>Socratic Battle Arena</strong>!</p>
-                    <p>Let's master this concept step-by-step. Here's your first challenge:</p>
+                    ${t('battle.welcomeIntro')}
                     <div class="math-block">${firstChallenge.question}</div>
                 `;
                 window.UIHelpers.addMessage(intro, 'ai', this.chatContainer, ['task-message']);
             } else {
-                const msg = `<p>Coming soon! No challenges available for this node yet.</p>`;
-                window.UIHelpers.addMessage(msg, 'ai', this.chatContainer);
+                window.UIHelpers.addMessage(t('battle.comingSoon'), 'ai', this.chatContainer);
             }
         },
 
@@ -855,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const advanceBtn = document.createElement('button');
                             advanceBtn.className = 'btn btn-primary';
                             advanceBtn.style.cssText = 'margin: 12px auto 0; display: block;';
-                            advanceBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Next Challenge';
+                            advanceBtn.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${t('battle.nextChallenge')}`;
                             advanceBtn.addEventListener('click', () => {
                                 btnContainer.remove();
                                 this.chatContainer.innerHTML = '';
@@ -868,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 const currentChallenge = window.BattleSystem.getCurrentChallenge();
                                 if (currentChallenge) {
-                                    const nextMsg = `<p>🤖 Excellent! Here's your next challenge:</p>
+                                    const nextMsg = `${t('battle.excellentNext')}
                                                     <div class="math-block">${currentChallenge.question}</div>`;
                                     window.UIHelpers.addMessage(nextMsg, 'ai', this.chatContainer, ['task-message']);
                                 }
@@ -879,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const finishBtn = document.createElement('button');
                             finishBtn.className = 'btn btn-primary';
                             finishBtn.style.cssText = 'margin: 12px auto 0; display: block;';
-                            finishBtn.innerHTML = '<i class="fa-solid fa-trophy"></i> Finish Battle';
+                            finishBtn.innerHTML = `<i class="fa-solid fa-trophy"></i> ${t('battle.finishBattle')}`;
                             finishBtn.addEventListener('click', () => {
                                 btnContainer.remove();
                                 this.chatInputText.disabled = false;
@@ -903,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const skipBtn = document.createElement('button');
                         skipBtn.id = 'skip-challenge-btn';
                         skipBtn.className = 'btn btn-secondary skip-btn';
-                        skipBtn.innerHTML = '<i class="fa-solid fa-forward"></i> Too hard, Skip';
+                        skipBtn.innerHTML = `<i class="fa-solid fa-forward"></i> ${t('battle.skip')}`;
                         skipBtn.onclick = () => {
                             skipContainer.classList.add('hidden');
                             this.chatContainer.innerHTML = '';
@@ -912,7 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             const next = window.BattleSystem.getCurrentChallenge();
                             if (next) {
-                                const msg = `<p>No worries! Let's rotate the battlefield to another concept:</p>
+                                const msg = `${t('battle.rotate')}
                                             <div class="math-block">${next.question}</div>`;
                                 window.UIHelpers.addMessage(msg, 'ai', this.chatContainer, ['task-message']);
                             } else {
@@ -926,7 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 console.error("Battle Interaction Error:", err);
                 window.UIHelpers.removeTypingIndicator(typingId);
-                window.UIHelpers.addMessage(`<p>⚠️ Connection interrupted. Please try again.</p>`, 'ai', this.chatContainer);
+                window.UIHelpers.addMessage(t('battle.interrupted'), 'ai', this.chatContainer);
             } finally {
                 window.BattleSystem.isProcessing = false;
             }
@@ -939,10 +947,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (diagCard) {
                 diagCard.innerHTML = `
                     <div class="card-header">
-                        <h3><i class="fa-solid fa-circle-check"></i> Battle Complete!</h3>
+                        <h3><i class="fa-solid fa-circle-check"></i> ${t('battle.complete')}</h3>
                     </div>
                     <div class="card-body">
-                        <p>Processing your results and updating your mastery map...</p>
+                        <p>${t('battle.processing')}</p>
                     </div>`;
             }
 

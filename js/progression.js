@@ -86,7 +86,7 @@ window.ProgressionManager = (function() {
         const newLevel = Math.floor(Math.sqrt(userProfile.xp / 10)) + 1;
         if (newLevel > userProfile.level) {
             userProfile.level = newLevel;
-            showXPToast(`Level Up! You are now Lvl ${newLevel}`);
+            showXPToast(window.I18n.t('toast.levelUp', { n: newLevel }));
         }
         saveProfile();
     }
@@ -103,7 +103,7 @@ window.ProgressionManager = (function() {
 
         const uiLevel = document.getElementById('ui-user-level');
         if (uiLevel) {
-            uiLevel.textContent = `Grade 11 — Lvl ${userProfile.level}`;
+            uiLevel.textContent = window.I18n.t('user.level', { n: userProfile.level });
         }
 
         const progressBar = document.getElementById('quest-progress-bar');
@@ -112,15 +112,15 @@ window.ProgressionManager = (function() {
         if (progressBar && progressText) {
             const minutes = Math.min(15, userProfile.questTime || 0);
             progressBar.style.width = `${(minutes / 15) * 100}%`;
-            progressText.textContent = `${minutes} / 15 mins`;
+            progressText.textContent = window.I18n.t('quest.mins', { n: minutes });
             if (questFocus) {
                 const skillNodes = window.DB.skillNodes;
                 const practiced = skillNodes.filter(n => userProfile.nodes[n.id]?.mastery > 0);
-                const weakest = practiced.length > 0 ? practiced.reduce((a, b) => 
+                const weakest = practiced.length > 0 ? practiced.reduce((a, b) =>
                     userProfile.nodes[a.id].mastery < userProfile.nodes[b.id].mastery ? a : b
                 ) : null;
                 if (weakest && userProfile.nodes[weakest.id].mastery < 85) {
-                    questFocus.textContent = `Focus: ${weakest.label}`;
+                    questFocus.textContent = window.I18n.t('quest.focus', { name: weakest.label });
                 } else {
                     const nextAvailable = skillNodes.find(n => {
                         const status = userProfile.nodes[n.id]?.status;
@@ -131,7 +131,7 @@ window.ProgressionManager = (function() {
                         }
                         return false;
                     });
-                    questFocus.textContent = nextAvailable ? `Next: ${nextAvailable.label}` : 'All Mastered!';
+                    questFocus.textContent = nextAvailable ? window.I18n.t('quest.nextUp', { name: nextAvailable.label }) : window.I18n.t('quest.allMastered');
                 }
             }
         }
@@ -144,7 +144,7 @@ window.ProgressionManager = (function() {
                 .sort((a, b) => userProfile.nodes[b.id].mastery - userProfile.nodes[a.id].mastery)
                 .slice(0, 3);
             if (practizedNodes.length === 0) {
-                masteryList.innerHTML = '<li><em>No concepts practiced yet. Start a battle to begin!</em></li>';
+                masteryList.innerHTML = `<li><em>${window.I18n.t('dash.noConceptsYet')}</em></li>`;
             } else {
                 practizedNodes.forEach(node => {
                     const mst = userProfile.nodes[node.id].mastery;

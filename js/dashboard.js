@@ -9,6 +9,7 @@ window.DashboardStats = {
             const userProfile = window.ProgressionManager.getProfile();
             if (!userProfile) return;
 
+            const t = (k, v) => window.I18n.t(k, v);
             const skillNodes = window.DB.skillNodes;
 
             const masterCount = skillNodes.filter(n => userProfile.nodes[n.id]?.status === 'mastered').length;
@@ -35,7 +36,7 @@ window.DashboardStats = {
                     n.prerequisites.every(pid => userProfile.nodes[pid]?.status === 'mastered')
                 );
                 if (nextUnlock) {
-                    nextUnlockEl.textContent = `🔓 ${nextUnlock.label} is ready!`;
+                    nextUnlockEl.textContent = `🔓 ${t('dash.readyToLearn', { name: nextUnlock.label })}`;
                 } else {
                     const anyLocked = skillNodes.find(n => userProfile.nodes[n.id]?.status === 'locked');
                     if (anyLocked) {
@@ -44,9 +45,9 @@ window.DashboardStats = {
                             .filter(n => n && (!userProfile.nodes[n.id] || userProfile.nodes[n.id].status !== 'mastered'))
                             .map(n => n.label)
                             .join(', ');
-                        nextUnlockEl.textContent = prereqs ? `Master: ${prereqs}` : 'Requirement met!';
+                        nextUnlockEl.textContent = prereqs ? t('dash.masterFirst', { names: prereqs }) : t('dash.reqMet');
                     } else {
-                        nextUnlockEl.textContent = 'All skills unlocked!';
+                        nextUnlockEl.textContent = t('dash.allUnlocked');
                     }
                 }
             }
@@ -56,7 +57,7 @@ window.DashboardStats = {
             if (weakestEl) {
                 const practiced = skillNodes.filter(n => (userProfile.nodes[n.id]?.mastery || 0) > 0);
                 if (practiced.length === 0) {
-                    weakestEl.textContent = 'Start practicing to see recommendations';
+                    weakestEl.textContent = t('dash.startPractice');
                 } else {
                     weakestNode = practiced.reduce((a, b) => {
                         const masteryA = userProfile.nodes[a.id]?.mastery ?? 100;
@@ -83,16 +84,16 @@ window.DashboardStats = {
                 let title = "";
                 let body = "";
                 let tag = "";
-                let btnText = "Start Practice";
+                let btnText = t('rec.getStarted');
 
                 const rMastery = (recommendNode && nodes[recommendNode.id]) ? nodes[recommendNode.id].mastery : 0;
 
                 if (recommendNode) {
-                    title = `<i class="fa-solid fa-microchip"></i> Adaptive Priority`;
-                    tag = `<span class="tag tag-red">Pattern-Based: ${rMastery}%</span>`;
-                    body = `Intelligence analysis suggests prioritizing <strong>${recommendNode.label}</strong> to optimize your mastery path.`;
-                    btnText = "Begin Socratic Battle";
-                    if (recommendedCountEl) recommendedCountEl.textContent = "You have 1 recommended action based on pattern analysis.";
+                    title = `<i class="fa-solid fa-microchip"></i> ${t('rec.adaptivePriority')}`;
+                    tag = `<span class="tag tag-red">${t('rec.patternTag', { pct: rMastery })}</span>`;
+                    body = t('rec.adaptiveBody', { name: recommendNode.label });
+                    btnText = t('rec.beginBattle');
+                    if (recommendedCountEl) recommendedCountEl.textContent = t('rec.oneAction');
                     const otherNodes = skillNodes.filter(n => n.id !== 'chap6exam');
                     const allOthers100 = otherNodes.every(n => (nodes[n.id]?.mastery || 0) >= 100);
                     const finalExamNode = skillNodes.find(n => n.id === 'chap6exam');
@@ -100,11 +101,11 @@ window.DashboardStats = {
 
                     if (allOthers100 && finalExamNode && (finalStatus?.mastery || 0) < 100) {
                         recommendNode = finalExamNode;
-                        title = `<i class="fa-solid fa-graduation-cap"></i> Final Challenge`;
-                        tag = `<span class="tag tag-gold" style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.3);">UNLOCKED</span>`;
-                        body = `Outstanding achievement! You have reached 100% mastery in all topics. You are now prepared for the <strong>Final Exam</strong>.`;
-                        btnText = "Start Final Exam";
-                        if (recommendedCountEl) recommendedCountEl.textContent = "It's time. The final assessment is ready for you.";
+                        title = `<i class="fa-solid fa-graduation-cap"></i> ${t('rec.finalChallenge')}`;
+                        tag = `<span class="tag tag-gold" style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.3);">${t('rec.unlocked')}</span>`;
+                        body = t('rec.finalBody');
+                        btnText = t('rec.startFinal');
+                        if (recommendedCountEl) recommendedCountEl.textContent = t('rec.finalReady');
                     } else {
                         const nextAvailable = otherNodes.find(n => {
                             const nodeState = nodes[n.id];
@@ -114,44 +115,44 @@ window.DashboardStats = {
                             }
                             return false;
                         });
-                        
+
                         if (nextAvailable) {
                             recommendNode = nextAvailable;
                             const rNodeState = nodes[nextAvailable.id] || { mastery: 0 };
                             const curMastery = rNodeState.mastery || 0;
-                            
+
                             if (curMastery === 0) {
-                                title = `<i class="fa-solid fa-rocket"></i> Get Started`;
-                                tag = `<span class="tag tag-blue" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">New</span>`;
-                                body = `Welcome! Start your journey by mastering <strong>${nextAvailable.label}</strong> through a Socratic battle.`;
-                                btnText = "Start Socratic Battle";
+                                title = `<i class="fa-solid fa-rocket"></i> ${t('rec.getStarted')}`;
+                                tag = `<span class="tag tag-blue" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">${t('rec.newTag')}</span>`;
+                                body = t('rec.welcomeBody', { name: nextAvailable.label });
+                                btnText = t('rec.startBattle');
                             } else if (curMastery < 95) {
-                                title = `<i class="fa-solid fa-seedling"></i> Strengthen Foundation`;
-                                tag = `<span class="tag tag-orange" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">Partial: ${curMastery}%</span>`;
-                                body = `You've made progress on <strong>${nextAvailable.label}</strong>! Continue your Socratic battle to secure this foundation.`;
-                                btnText = "Continue Learning";
+                                title = `<i class="fa-solid fa-seedling"></i> ${t('rec.strengthen')}`;
+                                tag = `<span class="tag tag-orange" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">${t('rec.partialTag', { pct: curMastery })}</span>`;
+                                body = t('rec.strengthenBody', { name: nextAvailable.label });
+                                btnText = t('rec.continueLearning');
                             } else {
-                                title = `<i class="fa-solid fa-unlock"></i> Refine Mastery`;
-                                tag = `<span class="tag tag-green" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">Review: ${curMastery}%</span>`;
-                                body = `Excellent foundation in <strong>${nextAvailable.label}</strong>. Practice now to achieve perfect 100% mastery.`;
-                                btnText = "Refine This Skill";
+                                title = `<i class="fa-solid fa-unlock"></i> ${t('rec.refineMastery')}`;
+                                tag = `<span class="tag tag-green" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">${t('rec.reviewTag', { pct: curMastery })}</span>`;
+                                body = t('rec.refineBody', { name: nextAvailable.label });
+                                btnText = t('rec.refineSkill');
                             }
-                            
-                            if (recommendedCountEl) recommendedCountEl.textContent = curMastery === 0 ? "Begin your first challenge today." : "You have progress to build upon.";
+
+                            if (recommendedCountEl) recommendedCountEl.textContent = curMastery === 0 ? t('rec.beginFirst') : t('rec.buildProgress');
                         } else if (otherNodes.every(n => nodes[n.id]?.mastery >= 100)) {
-                            title = `<i class="fa-solid fa-trophy"></i> Master of Logarithms`;
-                            tag = `<span class="tag" style="background: var(--tag-green-bg); color: var(--tag-green-text);">Champion</span>`;
-                            body = `Legendary! You have completed the curriculum at 100% proficiency. You can review any skill anytime!`;
-                            btnText = "Review a Skill";
-                            if (recommendedCountEl) recommendedCountEl.textContent = "Curriculum complete. You have achieved peak mastery.";
+                            title = `<i class="fa-solid fa-trophy"></i> ${t('rec.master')}`;
+                            tag = `<span class="tag" style="background: var(--tag-green-bg); color: var(--tag-green-text);">${t('rec.champion')}</span>`;
+                            body = t('rec.masterBody');
+                            btnText = t('rec.reviewSkill');
+                            if (recommendedCountEl) recommendedCountEl.textContent = t('rec.complete');
                         } else {
                             const firstNode = skillNodes[0];
                             recommendNode = firstNode;
-                            title = `<i class="fa-solid fa-rocket"></i> Get Started`;
-                            tag = `<span class="tag tag-blue" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">New</span>`;
-                            body = `Welcome! Start your journey by mastering <strong>${firstNode ? firstNode.label : 'Mathematics'}</strong> through a Socratic battle.`;
-                            btnText = "Start Socratic Battle";
-                            if (recommendedCountEl) recommendedCountEl.textContent = "Begin your first challenge today.";
+                            title = `<i class="fa-solid fa-rocket"></i> ${t('rec.getStarted')}`;
+                            tag = `<span class="tag tag-blue" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">${t('rec.newTag')}</span>`;
+                            body = t('rec.welcomeBody', { name: firstNode ? firstNode.label : 'Mathematics' });
+                            btnText = t('rec.startBattle');
+                            if (recommendedCountEl) recommendedCountEl.textContent = t('rec.beginFirst');
                         }
                     }
                 }
@@ -177,7 +178,7 @@ window.DashboardStats = {
                     };
                 }
             } else {
-                if (recommendedCountEl) recommendedCountEl.textContent = "Welcome back! Check your tree.";
+                if (recommendedCountEl) recommendedCountEl.textContent = t('dash.checkTree');
             }
         } catch (err) {
             console.warn('[DASHBOARD] Caught error in updateStats:', err);

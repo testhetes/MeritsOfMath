@@ -12,7 +12,7 @@
 // Only bump CACHE for a hard reset (e.g. to purge everything). Routine updates no longer
 // require it.
 
-const CACHE = 'merits-v3';
+const CACHE = 'merits-v4';
 
 const APP_SHELL = [
     './',
@@ -20,6 +20,7 @@ const APP_SHELL = [
     './style.css',
     './manifest.webmanifest',
     './icons/icon.svg',
+    './js/i18n.js',
     './js/db.js',
     './js/rag.js',
     './js/progression.js',
@@ -33,8 +34,10 @@ const APP_SHELL = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE)
-            // Ignore individual failures so one bad asset can't block install.
-            .then((cache) => Promise.allSettled(APP_SHELL.map((url) => cache.add(url))))
+            // Precache with {cache:'reload'} so install always pulls fresh from the network,
+            // never the browser's HTTP cache — otherwise a deploy can be precached stale.
+            // allSettled so one bad asset can't block install.
+            .then((cache) => Promise.allSettled(APP_SHELL.map((url) => cache.add(new Request(url, { cache: 'reload' })))))
             .then(() => self.skipWaiting())
     );
 });

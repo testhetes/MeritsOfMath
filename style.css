@@ -2264,6 +2264,75 @@ math-field::part(menu-toggle) {
     overflow-x: auto;
 }
 
+/* ====================================================
+   LANGUAGE TOGGLE
+   ==================================================== */
+.lang-toggle {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: var(--radius-full);
+}
+
+.lang-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+
+.lang-toggle button:hover {
+    color: var(--text-primary);
+}
+
+.lang-toggle button.lang-active {
+    background: var(--accent-primary);
+    color: #fff;
+}
+
+.lang-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.lang-label {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.sidebar-lang {
+    margin-top: auto;
+    align-self: center;
+}
+
+.sidebar-lang button {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+@media (max-width: 900px) {
+    .sidebar-lang {
+        margin-top: 0;
+    }
+
+    .sidebar-lang button {
+        padding: 6px 10px;
+    }
+}
+
 .solved-state .math-block {
     background: rgba(52, 211, 153, 0.05);
     border-color: rgba(52, 211, 153, 0.2);
