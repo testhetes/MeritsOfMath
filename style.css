@@ -343,15 +343,16 @@ body {
     animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Opacity-only: a translateY here leaves a residual transform on .view-section,
+   which creates a containing block that traps position:fixed children (the mobile
+   node-detail bottom sheet) and offsets fixed/pinned layouts. */
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(8px);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
@@ -1383,12 +1384,12 @@ math-field::part(menu-toggle) {
     }
 
     .nav-item {
-        padding: 10px;
+        padding: 13px;
         font-size: 0;
     }
 
     .nav-item i {
-        font-size: 18px;
+        font-size: 19px;
     }
 
     .badge {
@@ -1415,10 +1416,35 @@ math-field::part(menu-toggle) {
 
     /* Onboarding steps (esp. the accordion step) can be taller than a phone screen;
        without this the Next/Finish buttons are unreachable for new mobile users. */
-    .onboarding-card {
-        max-height: calc(100vh - 24px);
-        max-height: calc(100dvh - 24px);
+    /* Let the whole overlay scroll. Selectors use the #onboarding-view ID so they WIN
+       over the base .onboarding-container / .onboarding-card rules, which are defined
+       LATER in this file (equal-specificity class rules would otherwise override these).
+       The base rule is overflow:hidden + center-align, which clips tall cards on phones
+       once the address bar shrinks the viewport. auto-margins keep a short card centered
+       but let a tall one scroll from the top. */
+    #onboarding-view.onboarding-container {
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        align-items: flex-start;
+        padding: 16px 12px;
+    }
+
+    #onboarding-view .onboarding-card {
+        margin: auto;
+        max-height: none;
+        overflow: visible;
+        width: 100%;
+        padding: 32px 22px;
+        border-radius: 24px;
+    }
+
+    #onboarding-view .onboarding-card h2 {
+        font-size: 26px;
+    }
+
+    #onboarding-view .onboarding-card p {
+        font-size: 15px;
+        margin-bottom: 24px;
     }
 
     #battle-view.active {
@@ -1455,12 +1481,31 @@ math-field::part(menu-toggle) {
         max-width: 150px;
     }
 
-    .node-detail-panel {
+    /* On phones the panel would render in-flow far below the tall tree canvas —
+       off-screen and easy to miss. Make it a bottom sheet that's always in view,
+       scrollable, with the action button reachable at the bottom of the sheet. */
+    #node-detail-panel.node-detail-panel {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: 0;
         padding: 20px;
+        border-radius: 20px 20px 0 0;
+        max-height: 82vh;
+        max-height: 82dvh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        z-index: 500;
+        box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.55);
     }
 
     .node-detail-actions {
         flex-direction: column;
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-secondary);
+        padding-top: 12px;
     }
 }
 
