@@ -4,6 +4,11 @@
 # Dependencies
 node_modules/
 
+# Python (ingestion tooling)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 # OS / editor junk
 .DS_Store
 Thumbs.db
