@@ -2,12 +2,11 @@
 // Vectorize binding exists, the index description. Used to provision and debug the
 // retrieval stack. Requires the INGEST_SECRET bearer token.
 
-import { EMBEDDING_MODEL, authorized, embed, json } from './_rag.js';
+import { EMBEDDING_MODEL, authFailure, embed, json } from './_rag.js';
 
 export async function onRequestPost({ request, env }) {
-    if (!authorized(request, env)) {
-        return json({ error: 'Unauthorized' }, 401);
-    }
+    const denied = authFailure(request, env);
+    if (denied) return denied;
 
     let embeddingDim = null;
     let embeddingError = null;

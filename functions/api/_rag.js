@@ -10,6 +10,26 @@ export function authorized(request, env) {
     return Boolean(env.INGEST_SECRET) && token === env.INGEST_SECRET;
 }
 
+export function json(obj, status = 200) {
+    return new Response(JSON.stringify(obj), {
+        status,
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
+
+// Distinguishes a missing server-side secret (500, misconfiguration) from a
+// wrong bearer token (401, client error) — from outside, authorized() alone
+// makes those two cases indistinguishable, which cost hours of debugging.
+export function authFailure(request, env) {
+    if (!env.INGEST_SECRET) {
+        return json({ error: 'INGEST_SECRET is not configured on the server' }, 500);
+    }
+    if (!authorized(request, env)) {
+        return json({ error: 'Unauthorized' }, 401);
+    }
+    return null;
+}
+
 export async function embed(env, texts) {
     const out = await env.AI.run(EMBEDDING_MODEL, { text: texts });
     const vectors = out && out.data;
@@ -17,11 +37,4 @@ export async function embed(env, texts) {
         throw new Error('Embedding model returned no vectors');
     }
     return vectors;
-}
-
-export function json(obj, status = 200) {
-    return new Response(JSON.stringify(obj), {
-        status,
-        headers: { 'Content-Type': 'application/json' }
-    });
 }
