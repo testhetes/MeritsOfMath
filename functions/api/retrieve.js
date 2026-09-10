@@ -22,7 +22,7 @@ export async function onRequestPost({ request, env }) {
         return json({ error: 'Invalid JSON body' }, 400);
     }
 
-    const query = typeof body.query === 'string' ? body.query.trim() : '';
+    const query = typeof (body && body.query) === 'string' ? body.query.trim() : '';
     if (!query) {
         return json({ error: 'query is required' }, 400);
     }

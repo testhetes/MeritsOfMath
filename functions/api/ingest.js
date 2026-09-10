@@ -22,7 +22,7 @@ export async function onRequestPost({ request, env }) {
         return json({ error: 'Invalid JSON body' }, 400);
     }
 
-    const chunks = Array.isArray(body.chunks) ? body.chunks : [];
+    const chunks = Array.isArray(body && body.chunks) ? body.chunks : [];
     if (chunks.length === 0) {
         return json({ error: 'chunks[] is required and must not be empty' }, 400);
     }
