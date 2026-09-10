@@ -1,0 +1,66 @@
+[
+  {
+    "query": "Vì sao khi cộng 27 + 15 lại phải nhớ 1?",
+    "expect_doc_id": "phep-cong-co-nho-trong-pham-vi-100"
+  },
+  {
+    "query": "Làm sao để biết một số có chia hết cho 9?",
+    "expect_doc_id": "dau-hieu-chia-het"
+  },
+  {
+    "query": "Tại sao tính diện tích tam giác lại phải chia đôi?",
+    "expect_doc_id": "dien-tich-va-the-tich"
+  },
+  {
+    "query": "Một chiếc áo được giảm giá 15% thì em phải trả bao nhiêu tiền?",
+    "expect_doc_id": "ti-so-phan-tram"
+  },
+  {
+    "query": "Đi hết một vòng quanh mảnh vườn thì dài bao nhiêu mét?",
+    "expect_doc_id": "chu-vi-hinh-chu-nhat-hinh-vuong"
+  },
+  {
+    "query": "Chia 13 cái kẹo cho 3 bạn thì thừa mấy cái?",
+    "expect_doc_id": "chia-het-va-chia-co-du"
+  },
+  {
+    "query": "Tại sao một phần hai cộng một phần ba không phải là hai phần năm?",
+    "expect_doc_id": "cong-tru-phan-so"
+  },
+  {
+    "query": "Nhân một số với 10 thì dấu phẩy dịch chuyển thế nào?",
+    "expect_doc_id": "phep-tinh-voi-so-thap-phan"
+  },
+  {
+    "query": "Trong số 57 thì chữ số 5 mang giá trị bao nhiêu?",
+    "expect_doc_id": "cac-so-den-100"
+  },
+  {
+    "query": "Bạn Nam có 4 quả chuối, bố cho thêm 3 quả nữa thì bạn Nam có bao nhiêu quả chuối?",
+    "expect_doc_id": "phep-cong-trong-pham-vi-10"
+  },
+  {
+    "query": "Đàn vịt con có 9 con, 5 con bơi đi mất, hỏi đàn vịt con còn lại mấy con?",
+    "expect_doc_id": "phep-tru-trong-pham-vi-10"
+  },
+  {
+    "query": "Mỗi giỏ có 3 quả cam, có 7 giỏ như thế, hỏi tất cả có bao nhiêu quả cam?",
+    "expect_doc_id": "bang-nhan-2-3-4-5"
+  },
+  {
+    "query": "Có 48 cái cúc áo được xếp đều thành 6 hàng, mỗi hàng có bao nhiêu cái cúc áo?",
+    "expect_doc_id": "bang-nhan-chia-6-7-8-9"
+  },
+  {
+    "query": "Phân số nào lớn hơn: 5 phần 8 hay 3 phần 8?",
+    "expect_doc_id": "phan-so-va-cach-doc"
+  },
+  {
+    "query": "Số 4,5 và số 4,50 có giá trị giống nhau không, tại sao?",
+    "expect_doc_id": "so-thap-phan"
+  },
+  {
+    "query": "Vì sao khi tính 83 trừ 46 em phải mượn 1 chục ở hàng chục?",
+    "expect_doc_id": "phep-tru-co-nho-trong-pham-vi-100"
+  }
+]
