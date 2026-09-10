@@ -27,3 +27,13 @@ def test_reports_embedding_dimension():
     assert isinstance(data["embeddingDim"], int)
     assert data["embeddingDim"] > 0
     print("EMBEDDING DIMENSION:", data["embeddingDim"])
+
+
+def test_index_is_bound_with_matching_dimensions():
+    r = _post("/api/rag-status")
+    assert r.status_code == 200, r.text
+    data = r.json()
+    index = data["index"]
+    assert index is not None, "VECTORIZE binding missing"
+    assert "error" not in index, index
+    assert index["dimensions"] == data["embeddingDim"]
