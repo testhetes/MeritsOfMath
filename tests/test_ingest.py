@@ -1,7 +1,5 @@
 import requests
 
-from tests.conftest import BASE, HEADERS
-
 FIXTURE = [
     {
         "id": "test-doc:0000",
@@ -16,20 +14,27 @@ FIXTURE = [
 ]
 
 
-def test_requires_auth():
-    r = requests.post(f"{BASE}/api/ingest", json={"chunks": FIXTURE},
+def test_requires_auth(base_url):
+    r = requests.post(f"{base_url}/api/ingest", json={"chunks": FIXTURE},
                       headers={"Authorization": "Bearer nope"}, timeout=60)
     assert r.status_code == 401
 
 
-def test_rejects_empty_chunks():
-    r = requests.post(f"{BASE}/api/ingest", json={"chunks": []},
-                      headers=HEADERS, timeout=60)
+def test_rejects_empty_chunks(base_url, auth_headers):
+    r = requests.post(f"{base_url}/api/ingest", json={"chunks": []},
+                      headers=auth_headers, timeout=60)
     assert r.status_code == 400
 
 
-def test_upserts_chunks():
-    r = requests.post(f"{BASE}/api/ingest", json={"chunks": FIXTURE},
-                      headers=HEADERS, timeout=120)
+def test_rejects_null_body(base_url, auth_headers):
+    r = requests.post(f"{base_url}/api/ingest", data="null",
+                      headers={**auth_headers, "Content-Type": "application/json"},
+                      timeout=60)
+    assert r.status_code == 400
+
+
+def test_upserts_chunks(base_url, auth_headers):
+    r = requests.post(f"{base_url}/api/ingest", json={"chunks": FIXTURE},
+                      headers=auth_headers, timeout=120)
     assert r.status_code == 200, r.text
     assert r.json()["upserted"] == 2
