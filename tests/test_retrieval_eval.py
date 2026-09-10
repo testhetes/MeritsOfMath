@@ -6,6 +6,7 @@
 # paraphrase of its target document, not a copy of its wording.
 import json
 import pathlib
+import re
 import time
 
 import pytest
@@ -16,8 +17,49 @@ import requests
 CASES_PATH = pathlib.Path(__file__).parent / "evals" / "retrieval_cases.json"
 CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))
 
+# Project root / content directory, derived the same CWD-independent way as
+# CASES_PATH above (tests/ is a direct child of the project root).
+CONTENT_DIR = pathlib.Path(__file__).parent.parent / "content"
 
-@pytest.fixture(scope="session", autouse=True)
+_FIVE_GRAM_LEN = 5
+
+
+def _normalize_tokens(text):
+    """Lowercase, strip punctuation, collapse whitespace, split on spaces.
+
+    Vietnamese diacritics are deliberately NOT stripped — token identity is
+    the accented word, not an ASCII-folded approximation of it, since
+    stripping diacritics would blur distinct Vietnamese words together and
+    both weaken and pollute the overlap check.
+    """
+    text = text.lower()
+    # \w is unicode-aware for str patterns in Python 3, so this keeps
+    # letters (including diacritics) and digits, and only strips actual
+    # punctuation/symbols.
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    return text.split()
+
+
+def _five_grams(tokens):
+    return {
+        tuple(tokens[i : i + _FIVE_GRAM_LEN])
+        for i in range(len(tokens) - _FIVE_GRAM_LEN + 1)
+    }
+
+
+def _find_content_file(doc_id):
+    """Locate content/**/<doc_id>.md by stem, without hardcoding grade
+    folders, so this test doesn't need updating when content is reorganized
+    into new grade directories."""
+    matches = sorted(CONTENT_DIR.glob(f"**/{doc_id}.md"))
+    assert matches, (
+        f"no content file found for doc_id '{doc_id}' under {CONTENT_DIR} "
+        f"(searched **/{doc_id}.md)"
+    )
+    return matches[0]
+
+
+@pytest.fixture(scope="session")
 def wait_for_index_to_settle(base_url, auth_headers):
     """
     Cloudflare Vectorize is *eventually consistent*: vectors upserted by the
@@ -30,9 +72,17 @@ def wait_for_index_to_settle(base_url, auth_headers):
 
     So: before any eval assertion runs, poll POST /api/rag-status and wait
     for `index.vectorCount` to stop increasing across consecutive polls.
-    That is a real settle signal; a guessed fixed delay is not. This fixture
-    is session-scoped and autouse (within this module only) so it runs once
-    per test session, not once per case.
+    That is a real settle signal; a guessed fixed delay is not. This
+    fixture is session-scoped, so it runs once per test session (the first
+    test that requests it triggers the wait; every later request in the
+    same session reuses the already-settled result), not once per case.
+
+    Deliberately NOT autouse: this module also holds an offline, no-network
+    confound-guard test (test_case_has_no_lexical_confound_with_target_document)
+    that must collect and pass with no env vars set, same as test_chunker.py.
+    An autouse fixture here would force that test through base_url/
+    auth_headers too and skip it whenever secrets aren't configured. Instead,
+    only the live retrieval test below explicitly requests this fixture.
 
     DO NOT replace this with a bare time.sleep() — a future reader might be
     tempted to "simplify" it that way, but a fixed delay can't know how long
@@ -70,17 +120,27 @@ def wait_for_index_to_settle(base_url, auth_headers):
         previous_count = count
         time.sleep(poll_interval_seconds)
 
-    # Timed out without confirming settlement. Proceed rather than hang
-    # forever, but a low score right after this warning should be treated
-    # as suspect rather than as proof the embedding model is bad.
-    print(
-        f"WARNING: index did not settle within {timeout_seconds}s "
-        f"(last observed vectorCount={previous_count}); proceeding anyway"
+    # Timed out without confirming settlement. Fail loudly here rather than
+    # proceeding: if we let the suite continue, a stalled ingest surfaces
+    # only as ordinary-looking "wrong doc_id" failures in the retrieval
+    # cases below, with the real cause (the index never settled) buried in
+    # captured stdout that most operators never read. A hard failure with
+    # the observed counts in the message makes the true cause the first
+    # thing anyone sees.
+    pytest.fail(
+        f"index did not settle within {timeout_seconds}s "
+        f"(last observed vectorCount={previous_count}, "
+        f"required {consecutive_stable_polls_required} consecutive stable "
+        f"polls every {poll_interval_seconds}s); retrieval eval results "
+        f"below this point would be checked against a possibly-unsettled "
+        f"index and cannot be trusted"
     )
 
 
 @pytest.mark.parametrize("case", CASES, ids=[c["query"] for c in CASES])
-def test_expected_document_is_retrieved(case, base_url, auth_headers):
+def test_expected_document_is_retrieved(
+    case, base_url, auth_headers, wait_for_index_to_settle
+):
     response = requests.post(
         f"{base_url}/api/retrieve",
         json={"query": case["query"], "topK": 3},
@@ -93,4 +153,36 @@ def test_expected_document_is_retrieved(case, base_url, auth_headers):
     doc_ids = [m["doc_id"] for m in matches]
     assert case["expect_doc_id"] in doc_ids, (
         f"expected '{case['expect_doc_id']}' in top-3, got {doc_ids}"
+    )
+
+
+@pytest.mark.parametrize("case", CASES, ids=[c["query"] for c in CASES])
+def test_case_has_no_lexical_confound_with_target_document(case):
+    """
+    Offline, mechanical confound guard: no network access and no secrets,
+    so it runs (and must pass) in a bare shell with no env vars set, the
+    same as test_chunker.py.
+
+    A case whose query copies a run of words straight from its own target
+    document can be "won" by lexical overlap alone, even if the embedding
+    model's semantic understanding is poor or regresses — which would make
+    the whole eval suite falsely reassuring. This encodes that standard as
+    a test instead of relying on manual review to catch it (manual review
+    is exactly how the confounded cases this guard exists to prevent got
+    into the suite in the first place).
+
+    The check: no shared contiguous 5-token span between the normalized
+    query and the normalized full text of its target document.
+    """
+    doc_path = _find_content_file(case["expect_doc_id"])
+    doc_text = doc_path.read_text(encoding="utf-8")
+
+    query_grams = _five_grams(_normalize_tokens(case["query"]))
+    doc_grams = _five_grams(_normalize_tokens(doc_text))
+
+    shared = query_grams & doc_grams
+    assert not shared, (
+        f"query for case expect_doc_id={case['expect_doc_id']!r} shares a "
+        f"5-word span with its own target document ({doc_path.name}): "
+        f"{' '.join(next(iter(shared)))!r} -- query was: {case['query']!r}"
     )

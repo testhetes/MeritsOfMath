@@ -1,10 +1,10 @@
 [
   {
-    "query": "Vì sao khi cộng 27 + 15 lại phải nhớ 1?",
+    "query": "Con em cứ quên phải viết thêm 1 khi cộng 49 với 36, phải giải thích thế nào?",
     "expect_doc_id": "phep-cong-co-nho-trong-pham-vi-100"
   },
   {
-    "query": "Làm sao để biết một số có chia hết cho 9?",
+    "query": "Con em không hiểu vì sao chỉ cần cộng các chữ số của 81 lại thì biết được nó chia hết cho 9?",
     "expect_doc_id": "dau-hieu-chia-het"
   },
   {
@@ -12,19 +12,19 @@
     "expect_doc_id": "dien-tich-va-the-tich"
   },
   {
-    "query": "Một chiếc áo được giảm giá 15% thì em phải trả bao nhiêu tiền?",
+    "query": "Một chiếc cặp sách giá 300000 đồng được giảm 45% thì giá mới là bao nhiêu?",
     "expect_doc_id": "ti-so-phan-tram"
   },
   {
-    "query": "Đi hết một vòng quanh mảnh vườn thì dài bao nhiêu mét?",
+    "query": "Bơi hết vòng quanh cái hồ bơi hình chữ nhật dài 20m rộng 9m thì quãng đường là bao nhiêu mét?",
     "expect_doc_id": "chu-vi-hinh-chu-nhat-hinh-vuong"
   },
   {
-    "query": "Chia 13 cái kẹo cho 3 bạn thì thừa mấy cái?",
+    "query": "Chia 19 viên bi cho 6 bạn thì dư mấy viên?",
     "expect_doc_id": "chia-het-va-chia-co-du"
   },
   {
-    "query": "Tại sao một phần hai cộng một phần ba không phải là hai phần năm?",
+    "query": "Bạn em bảo một phần ba cộng một phần tư bằng hai phần bảy, vì sao cách tính đó lại sai?",
     "expect_doc_id": "cong-tru-phan-so"
   },
   {
@@ -32,11 +32,11 @@
     "expect_doc_id": "phep-tinh-voi-so-thap-phan"
   },
   {
-    "query": "Trong số 57 thì chữ số 5 mang giá trị bao nhiêu?",
+    "query": "Trong số 83, chữ số nào đứng ở hàng chục và nó có giá trị bằng bao nhiêu?",
     "expect_doc_id": "cac-so-den-100"
   },
   {
-    "query": "Bạn Nam có 4 quả chuối, bố cho thêm 3 quả nữa thì bạn Nam có bao nhiêu quả chuối?",
+    "query": "Em làm phép cộng: bạn Nam có 4 quả chuối, được cho thêm 6 quả chuối nữa, hỏi bạn Nam có tất cả bao nhiêu quả chuối?",
     "expect_doc_id": "phep-cong-trong-pham-vi-10"
   },
   {
@@ -44,7 +44,7 @@
     "expect_doc_id": "phep-tru-trong-pham-vi-10"
   },
   {
-    "query": "Mỗi giỏ có 3 quả cam, có 7 giỏ như thế, hỏi tất cả có bao nhiêu quả cam?",
+    "query": "Mỗi bình có 3 bông hoa, có 5 bình như vậy, hỏi tất cả có bao nhiêu bông hoa?",
     "expect_doc_id": "bang-nhan-2-3-4-5"
   },
   {
@@ -52,7 +52,7 @@
     "expect_doc_id": "bang-nhan-chia-6-7-8-9"
   },
   {
-    "query": "Phân số nào lớn hơn: 5 phần 8 hay 3 phần 8?",
+    "query": "Phân số nào lớn hơn: 2 phần 9 hay 7 phần 9?",
     "expect_doc_id": "phan-so-va-cach-doc"
   },
   {
@@ -60,7 +60,7 @@
     "expect_doc_id": "so-thap-phan"
   },
   {
-    "query": "Vì sao khi tính 83 trừ 46 em phải mượn 1 chục ở hàng chục?",
+    "query": "Con em hỏi vì sao lúc trừ 61 cho 39, hàng đơn vị không đủ trừ thì phải vay thêm 10, cô giải thích cách đó thế nào cho dễ hiểu?",
     "expect_doc_id": "phep-tru-co-nho-trong-pham-vi-100"
   }
 ]
