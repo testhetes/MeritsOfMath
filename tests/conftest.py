@@ -23,3 +23,11 @@ def auth_headers() -> dict:
     if not secret:
         pytest.skip("INGEST_SECRET not set — skipping live endpoint test")
     return {"Authorization": f"Bearer {secret}"}
+
+
+@pytest.fixture(scope="session")
+def ingest_secret() -> str:
+    secret = os.environ.get("INGEST_SECRET")
+    if not secret:
+        pytest.skip("INGEST_SECRET not set — skipping live endpoint test")
+    return secret
