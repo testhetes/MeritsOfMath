@@ -156,3 +156,21 @@ def ingest_secret() -> str:
     if not secret:
         pytest.skip("INGEST_SECRET not set — skipping live endpoint test")
     return secret
+
+
+@pytest.fixture(scope="session")
+def allow_prod_writes() -> None:
+    """Gate for tests that WRITE to the production Vectorize index.
+
+    There is no separate test index: RAG_BASE_URL is the live site, and the
+    index it writes to is the one students' chat retrieves from. So a test
+    that upserts or deletes vectors runs only when RAG_ALLOW_PROD_WRITES=1 is
+    set deliberately. List this fixture FIRST in a writing test's arguments
+    so the skip reason names the write gate. Tests that are rejected before
+    anything is written (401s, 400s) do not need it.
+    """
+    if os.environ.get("RAG_ALLOW_PROD_WRITES") != "1":
+        pytest.skip(
+            "writes to the PRODUCTION index — set RAG_ALLOW_PROD_WRITES=1 "
+            "to run this test deliberately"
+        )

@@ -33,7 +33,7 @@ def test_rejects_null_body(base_url, auth_headers):
     assert r.status_code == 400
 
 
-def test_upserts_chunks(base_url, auth_headers):
+def test_upserts_chunks(allow_prod_writes, base_url, auth_headers):
     r = requests.post(f"{base_url}/api/ingest", json={"chunks": FIXTURE},
                       headers=auth_headers, timeout=120)
     assert r.status_code == 200, r.text
