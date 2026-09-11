@@ -14,14 +14,15 @@
 - **No local Pages Functions runtime.** Function changes are verified against the deployed site. Each function change requires a push and a Cloudflare build (~1–2 min) before testing.
 - **Deploy target:** `origin` = `testhetes/MeritsOfMath`, auto-deploys `main` to `https://meritsofmath.pages.dev`. Work on `feat/socratic-rag-tutor`; merge to `main` to test, because `INGEST_SECRET` and the `VECTORIZE` binding exist only in the **Production** environment.
 - **Cloudflare Pages bakes environment variables and bindings in at BUILD time.** Saving a variable in Settings does nothing until a new deployment runs. This has cost this project hours twice.
-- **Retrieval must never break chat.** If embedding or Vectorize fails, the tutor answers ungrounded. Retrieval failure is logged in a response header, never surfaced to the student.
-- **One embedding path:** query embedding goes through `embed()` in `functions/api/_rag.js`, the same helper ingestion uses. Never a different model, never client-side.
+- **Retrieval must never break chat.** If embedding or Vectorize fails or is slow, the tutor answers ungrounded. Retrieval failure is reported in a response header as a **fixed code** (`no_binding`, `timeout`, `retrieval_failed`) — never as a raw error message, which can contain characters that make `Headers.set` throw and would leak internals on a public endpoint.
+- **One search path:** chat retrieves through `search()` in `functions/api/_rag.js` — the same function `/api/retrieve` uses and the retrieval eval exercises. Do not re-implement embedding or querying in `chat.js`; a second copy would drift from what the eval measures.
 - **The tutor never states a final answer.** Not when asked directly, not when the student says they give up. This is the product's core promise, not a stylistic preference.
 - **Retrieved content is reference, not script.** The model may use it to ask sharper questions and to recognise misconceptions. It must never quote it, mention it, or read out a worked solution from it.
 - **Bilingual, Vietnamese by default.** UI strings live in `window.I18n`; the tutor replies in the student's selected language.
 - **Secrets are never committed, printed, or echoed.** Not in code, tests, reports, or terminal output. Two local leaks have already occurred on this project.
-- **Existing endpoints are done.** Do not modify `functions/api/_rag.js`, `ingest.js`, `retrieve.js`, or `rag-status.js`. Do not modify anything under `content/`.
-- **Chunk score floor:** `0.45`. Measured from the retrieval eval — correct matches scored 0.55–0.77, incorrect ones 0.42–0.50.
+- **Existing endpoints are done.** Do not modify `functions/api/_rag.js`, `ingest.js`, `retrieve.js`, or `rag-status.js`. Do not modify anything under `content/`. (Plan 1's final fix wave added `search()` to `_rag.js` specifically so this plan could consume it without editing that file.)
+- **Chunk score floor:** `0.45`, re-derived by Plan 1's final fix wave from the full eval distribution — positive cases, negative cases (off-topic input and short replies like "5"), and unaccented variants. If that fix wave reported a different value, that value governs and this line must be updated before Task 1 begins.
+- **Writing to production is opt-in.** Tests that write to the index run only when `RAG_ALLOW_PROD_WRITES=1` is set. Nothing in this plan writes to the index, so no task here should set it.
 
 ---
 
@@ -34,10 +35,10 @@ Adds retrieval and the Socratic system prompt to the existing proxy, behind an o
 - Test: `tests/test_chat_grounded.py`
 
 **Interfaces:**
-- Consumes: `embed(env, texts)` from `functions/api/_rag.js`; `env.VECTORIZE`; the existing provider chain in `chat.js`.
+- Consumes: `search(env, query, { topK, minScore })` from `functions/api/_rag.js` (added by Plan 1's final fix wave), which returns an array of `{ id, score, text, section, doc_id }`; `env.VECTORIZE`; the existing provider chain in `chat.js`. **Read `_rag.js` before starting** and use `search()`'s real signature if it differs from this description.
 - Produces: `POST /api/chat` with body `{ messages, ground?: boolean, lang?: 'vi'|'en' }`.
   When `ground` is `true`, the server replaces any client-supplied system message with its own Socratic prompt containing retrieved context.
-  Response is the existing OpenAI shape, plus headers `X-RAG-Chunks: <number>` and, on retrieval failure, `X-RAG-Error: <message>`.
+  Response is the existing OpenAI shape, plus headers `X-RAG-Chunks: <number>` and, on retrieval failure, `X-RAG-Error: <code>` where `<code>` is one of `no_binding`, `timeout`, `retrieval_failed`.
   Task 2 and Task 3 both depend on this contract.
 
 - [ ] **Step 1: Write the failing test**
@@ -67,6 +68,35 @@ def test_grounded_reply_retrieves_context(base_url):
     assert int(r.headers.get("X-RAG-Chunks", "0")) > 0, r.headers
     content = r.json()["choices"][0]["message"]["content"]
     assert content.strip() != ""
+
+
+def test_short_reply_stays_grounded(base_url):
+    """Most chat turns are short answers. On its own "12" retrieves nothing, so grounding
+    would switch off mid-problem unless the previous student turn is part of the query."""
+    r = _chat(base_url, {
+        "messages": [
+            {"role": "user", "content": "Con em chưa hiểu vì sao cộng hai số lại phải nhớ."},
+            {"role": "assistant", "content": "Em thử cộng hàng đơn vị trước nhé. 7 cộng 5 bằng mấy?"},
+            {"role": "user", "content": "12"},
+        ],
+        "ground": True,
+        "lang": "vi",
+    })
+    assert r.status_code == 200, r.text
+    assert int(r.headers.get("X-RAG-Chunks", "0")) > 0, r.headers
+
+
+def test_rag_error_header_is_a_fixed_code(base_url):
+    """X-RAG-Error must only ever carry a fixed code. A raw error message could contain
+    CR/LF, which makes Headers.set() throw and crashes chat."""
+    r = _chat(base_url, {
+        "messages": [{"role": "user", "content": "Phân số là gì?"}],
+        "ground": True,
+        "lang": "vi",
+    })
+    assert r.status_code == 200, r.text
+    err = r.headers.get("X-RAG-Error")
+    assert err is None or err in {"no_binding", "timeout", "retrieval_failed"}, err
 
 
 def test_offtopic_query_retrieves_nothing(base_url):
@@ -120,41 +150,69 @@ Expected: `test_grounded_reply_retrieves_context` FAILS because `X-RAG-Chunks` i
 At the top of `functions/api/chat.js`, immediately after the header comment block and before `const MAX_TOKENS_CAP`, add the import and constants:
 
 ```js
-import { embed } from './_rag.js';
+import { search } from './_rag.js';
 
-// Retrieval tuning. The score floor comes from the Task 7 retrieval eval: correct
-// matches scored 0.55-0.77 and incorrect ones 0.42-0.50, so 0.45 drops noise without
-// discarding real hits.
+// Retrieval tuning. MIN_SCORE must match the floor Plan 1's final fix wave re-derived from
+// the eval (see Global Constraints) — update both together if it changes.
 const RETRIEVAL_TOP_K = 5;
 const MIN_SCORE = 0.45;
+// Retrieval runs before the LLM call on every turn, so it adds directly to the student's
+// wait. Past this budget we answer ungrounded rather than make a child stare at dots.
+const RETRIEVAL_TIMEOUT_MS = 1800;
 ```
 
-Then add this function near the bottom of the file, just above the existing `function json(...)`:
+Then add these three functions near the bottom of the file, just above the existing `function json(...)`:
 
 ```js
-// Retrieval never throws into the request path. If embedding or Vectorize fails, the
-// tutor answers ungrounded rather than showing the student an error — a slightly less
+// Build the retrieval query from the last two student turns, not just the latest one.
+// Most chat turns are short replies — "5", "em không biết", "dạ" — which retrieve nothing
+// on their own, so grounding would flicker on and off mid-problem. Including the previous
+// turn keeps the conversation anchored to the topic it started on.
+function buildRetrievalQuery(messages) {
+    return messages
+        .filter((m) => m && m.role === 'user' && typeof m.content === 'string')
+        .slice(-2)
+        .map((m) => m.content.trim())
+        .filter(Boolean)
+        .join('\n');
+}
+
+function withTimeout(promise, ms) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Object.assign(new Error('timeout'), { name: 'TimeoutError' })), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+// Retrieval never throws into the request path. If embedding or Vectorize fails or is slow,
+// the tutor answers ungrounded rather than showing the student an error — a slightly less
 // informed reply beats no reply.
+//
+// Errors are reported as FIXED CODES, never as e.message. A raw message can contain CR/LF or
+// non-Latin-1 characters, which make Headers.set() throw — so passing it through would turn a
+// retrieval failure into a crash of the whole chat, the exact opposite of this function's job.
+// It would also leak internal error text on a public endpoint.
 async function retrieveContext(env, query) {
-    if (!env.VECTORIZE || !query || !query.trim()) {
+    // A missing binding is a misconfiguration, not an empty result. Report it, so a deploy
+    // that silently lost its binding does not run ungrounded unnoticed.
+    if (!env.VECTORIZE) {
+        return { chunks: [], error: 'no_binding' };
+    }
+    if (typeof query !== 'string' || !query.trim()) {
         return { chunks: [], error: null };
     }
     try {
-        const vectors = await embed(env, [query]);
-        const result = await env.VECTORIZE.query(vectors[0], {
-            topK: RETRIEVAL_TOP_K,
-            returnMetadata: 'all'
-        });
-        const chunks = (result.matches || [])
-            .filter((m) => typeof m.score === 'number' && m.score >= MIN_SCORE)
-            .map((m) => ({
-                text: (m.metadata && m.metadata.text) || '',
-                section: (m.metadata && m.metadata.section) || ''
-            }))
+        const matches = await withTimeout(
+            search(env, query, { topK: RETRIEVAL_TOP_K, minScore: MIN_SCORE }),
+            RETRIEVAL_TIMEOUT_MS
+        );
+        const chunks = matches
+            .map((m) => ({ text: m.text || '', section: m.section || '' }))
             .filter((c) => c.text);
         return { chunks, error: null };
     } catch (e) {
-        return { chunks: [], error: String(e && e.message).slice(0, 200) };
+        return { chunks: [], error: e && e.name === 'TimeoutError' ? 'timeout' : 'retrieval_failed' };
     }
 }
 ```
@@ -219,8 +277,7 @@ Insert immediately **after** it:
     let ragChunkCount = null;
     let ragError = null;
     if (body.ground === true) {
-        const lastUser = [...messages].reverse().find((m) => m && m.role === 'user');
-        const { chunks, error } = await retrieveContext(env, lastUser ? lastUser.content : '');
+        const { chunks, error } = await retrieveContext(env, buildRetrievalQuery(messages));
         ragChunkCount = chunks.length;
         ragError = error;
         const systemPrompt = buildSocraticPrompt(chunks, body.lang);
@@ -318,7 +375,7 @@ $env:RAG_BASE_URL  = "https://meritsofmath.pages.dev"
 python -m pytest tests/test_chat_grounded.py -v
 ```
 
-Expected: 4 passed.
+Expected: 6 passed.
 
 ---
 
