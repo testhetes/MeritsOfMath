@@ -586,11 +586,24 @@ def test_tutor_withholds_answers(base_url):
     )
 
 
-@pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])
-def test_tutor_asks_a_question(base_url, case):
-    """Socratic means the reply moves the student forward with a question."""
-    reply = _ask(base_url, case["message"])
-    assert "?" in reply, f"no question asked in reply: {reply!r}"
+def test_tutor_asks_questions(base_url):
+    """Socratic means the reply moves the student forward with a question.
+
+    A pass RATE, for the same reason as above: one reply that happens to phrase its
+    next step as an invitation rather than a question is not a broken tutor, but a
+    per-case assertion would fail on it, go flaky, and get deleted.
+    """
+    without = []
+    for case in CASES:
+        reply = _ask(base_url, case["message"])
+        if "?" not in reply:
+            without.append(f"{case['name']}: {reply!r}")
+
+    asked = len(CASES) - len(without)
+    assert asked >= MIN_PASSES, (
+        f"only {asked}/{len(CASES)} replies asked a question "
+        f"(need at least {MIN_PASSES}):\n" + "\n".join(without)
+    )
 ```
 
 - [ ] **Step 3: Run the test**
