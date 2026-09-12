@@ -159,10 +159,13 @@ The response is `{"upserted":0,"mutationId":null,"deleted":2,
 `processedUpToMutation` equals that `deleteMutationId`, then check
 `vectorCount`.
 
-Limits enforced by the endpoint: at most 50 chunks or 500 `delete_ids` per
-request; ids must be non-blank strings within **64 bytes** (Vectorize's limit
-is in bytes, not characters — a Vietnamese-titled file produces multi-byte
-ids); no duplicate ids within one batch.
+Limits enforced by the endpoint: at most 50 chunks, or **100** `delete_ids`,
+per request. 100 is Vectorize's own hard limit on `deleteByIds` — 101 ids
+returns `VECTOR_DELETE_ERROR 40007`. Split a wider range into batches of 100,
+as the uploader does for its 200-wide prune window. Ids must be non-blank
+strings within **64 bytes** (Vectorize's limit is in bytes, not characters — a
+Vietnamese-titled file produces multi-byte ids), and no id may appear twice in
+one batch.
 
 ---
 
@@ -185,14 +188,17 @@ After renaming a file:
 
 1. Note the **old** stem and how many chunks it had. If you do not know, a
    generous over-estimate is fine — deleting ids that do not exist is a no-op.
-2. Delete the old document's whole range through `/api/ingest`:
+2. Delete the old document's whole range through `/api/ingest`, **in batches
+   of 100** — that is Vectorize's limit, and a larger batch is rejected:
 
    ```powershell
-   $ids = 0..199 | ForEach-Object { "old-name:{0:d4}" -f $_ }
-   $body = @{ delete_ids = $ids } | ConvertTo-Json -Compress
-   Invoke-RestMethod -Method Post -Uri "$env:RAG_BASE_URL/api/ingest" `
-       -Headers @{ Authorization = "Bearer $env:INGEST_SECRET" } `
-       -ContentType "application/json" -Body $body
+   $headers = @{ Authorization = "Bearer $env:INGEST_SECRET" }
+   foreach ($start in 0, 100) {
+       $ids = $start..($start + 99) | ForEach-Object { "old-name:{0:d4}" -f $_ }
+       $body = @{ delete_ids = $ids } | ConvertTo-Json -Compress
+       Invoke-RestMethod -Method Post -Uri "$env:RAG_BASE_URL/api/ingest" `
+           -Headers $headers -ContentType "application/json" -Body $body
+   }
    ```
 
 3. Upload the renamed file normally.

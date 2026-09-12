@@ -43,6 +43,10 @@ BATCH_SIZE = 25
 # chunks) and still one request, since /api/ingest accepts 500 delete_ids.
 PRUNE_WINDOW = 200
 
+# Vectorize rejects more than 100 ids in one deleteByIds call (error 40007), so
+# a prune window wider than this is sent as several requests.
+DELETE_BATCH_SIZE = 100
+
 # Vectorize applies mutations asynchronously. Observed settling is a few
 # seconds; this ceiling only decides how long to wait before calling it a
 # failure rather than letting callers read stale vectors silently.
@@ -133,14 +137,17 @@ def upload_markdown_file(path: str, base_url: str, secret: str,
         last_mutation = body.get("mutationId") or last_mutation
 
     if prune and prune_window > 0:
-        response = requests.post(
-            f"{base_url}/api/ingest",
-            json={"delete_ids": _stale_ids(doc_id, len(chunks), prune_window)},
-            headers=headers,
-            timeout=180,
-        )
-        response.raise_for_status()
-        last_mutation = response.json().get("deleteMutationId") or last_mutation
+        stale = _stale_ids(doc_id, len(chunks), prune_window)
+        for start in range(0, len(stale), DELETE_BATCH_SIZE):
+            response = requests.post(
+                f"{base_url}/api/ingest",
+                json={"delete_ids": stale[start:start + DELETE_BATCH_SIZE]},
+                headers=headers,
+                timeout=180,
+            )
+            response.raise_for_status()
+            last_mutation = (response.json().get("deleteMutationId")
+                             or last_mutation)
 
     if wait and last_mutation:
         wait_for_mutation(base_url, secret, last_mutation)

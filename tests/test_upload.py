@@ -111,6 +111,39 @@ def test_upload_prunes_stale_chunks_and_waits_on_the_delete_mutation(
     assert any(url.endswith("/api/rag-status") for url, _ in posts)
 
 
+def test_prune_window_is_split_into_batches_vectorize_will_accept(
+        tmp_path, monkeypatch):
+    """Vectorize rejects more than 100 ids per deleteByIds call (error 40007).
+    The default 200-wide prune window must therefore go out as two requests —
+    this is the bug that made the live upload return 502."""
+    source = tmp_path / "lesson.md"
+    source.write_text(SAMPLE_MD, encoding="utf-8")
+
+    delete_batches = []
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        if url.endswith("/api/ingest") and "chunks" in json:
+            return _FakeResponse({"upserted": len(json["chunks"]),
+                                  "mutationId": "upsert-mutation"})
+        if url.endswith("/api/ingest") and "delete_ids" in json:
+            delete_batches.append(json["delete_ids"])
+            return _FakeResponse({"upserted": 0, "mutationId": None,
+                                  "deleted": len(json["delete_ids"]),
+                                  "deleteMutationId": "delete-mutation"})
+        return _FakeResponse(
+            {"index": {"processedUpToMutation": "delete-mutation"}})
+
+    monkeypatch.setattr(upload_module.requests, "post", fake_post)
+    upload_markdown_file(str(source), base_url="https://example.invalid",
+                         secret="unused")
+
+    assert len(delete_batches) == 2
+    assert all(len(b) <= upload_module.DELETE_BATCH_SIZE for b in delete_batches)
+    # Every id in the window is still covered, none duplicated or dropped.
+    flat = [i for b in delete_batches for i in b]
+    assert flat == _stale_ids("lesson", 2, upload_module.PRUNE_WINDOW)
+
+
 def test_wait_for_mutation_returns_once_the_watermark_reaches_the_target(
         monkeypatch):
     seen = iter(["older-mutation", "older-mutation", "target-mutation"])

@@ -145,8 +145,11 @@ def test_rejects_blank_delete_id(base_url, auth_headers):
 
 
 def test_rejects_too_many_delete_ids(base_url, auth_headers):
+    """Vectorize caps deleteByIds at 100 ids (error 40007). Exceeding it must
+    be a 400 from our own validation, not a 502 raised from inside Vectorize
+    after the request has already been accepted."""
     r = _post(base_url, auth_headers,
-              {"delete_ids": [f"bulk:{i:04d}" for i in range(501)]})
+              {"delete_ids": [f"bulk:{i:04d}" for i in range(101)]})
     assert r.status_code == 400, r.text
 
 

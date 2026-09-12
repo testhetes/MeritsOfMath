@@ -15,9 +15,11 @@
 import { authFailure, embed, json } from './_rag.js';
 
 const MAX_CHUNKS_PER_REQUEST = 50;
-// Deletions carry no payload beyond an id, so a far larger batch is safe. The
-// uploader's prune step sends one window of ~200 ids per document.
-const MAX_DELETE_IDS_PER_REQUEST = 500;
+// Vectorize's own hard limit on deleteByIds, confirmed against the live index:
+// 101 ids returns VECTOR_DELETE_ERROR 40007 "max id count is 100". Enforcing it
+// here turns that into a clear 400 instead of a 502 raised from inside
+// Vectorize. Callers pruning a wider range split it into batches of this size.
+const MAX_DELETE_IDS_PER_REQUEST = 100;
 const MAX_TEXT_CHARS = 1200;
 // Vectorize caps a vector ID at 64 BYTES, not 64 characters. Chunk IDs are
 // `{doc_id}:{chunk_index:04d}` and doc_ids are ASCII slugs today (longest is
