@@ -49,3 +49,67 @@ export async function embed(env, texts) {
     }
     return vectors;
 }
+
+// --------------------------------------------------------------------------
+// The single semantic search path.
+//
+// /api/retrieve (and therefore the retrieval eval) and Plan 2's chat endpoint
+// both go through this function, so the eval measures exactly the code a
+// student's question travels through. Anything that changes retrieval — the
+// topK clamp, the score floor, the shape of a match — has to change here, once.
+// --------------------------------------------------------------------------
+
+export const DEFAULT_TOP_K = 5;
+export const MAX_TOP_K = 20;
+
+// Errors carry a `stage` so callers can tell a missing binding from an
+// embedding failure from a query failure without parsing message strings.
+function stageError(stage, cause) {
+    const error = new Error(String((cause && cause.message) || cause));
+    error.stage = stage;
+    return error;
+}
+
+export function clampTopK(value) {
+    const n = Math.trunc(Number(value));
+    if (!Number.isFinite(n) || n < 1) return DEFAULT_TOP_K;
+    return Math.min(n, MAX_TOP_K);
+}
+
+export async function search(env, query, options = {}) {
+    if (!env.VECTORIZE) {
+        throw stageError('binding', 'VECTORIZE binding is not configured');
+    }
+
+    const topK = clampTopK(options.topK);
+    const minScore = typeof options.minScore === 'number' ? options.minScore : null;
+
+    let queryVector;
+    try {
+        const vectors = await embed(env, [query]);
+        queryVector = vectors[0];
+    } catch (e) {
+        throw stageError('embed', e);
+    }
+
+    let result;
+    try {
+        result = await env.VECTORIZE.query(queryVector, {
+            topK,
+            returnMetadata: 'all'
+        });
+    } catch (e) {
+        throw stageError('query', e);
+    }
+
+    const matches = (result && result.matches) || [];
+    return matches
+        .filter((m) => minScore === null || m.score >= minScore)
+        .map((m) => ({
+            id: m.id,
+            score: m.score,
+            text: (m.metadata && m.metadata.text) || '',
+            section: (m.metadata && m.metadata.section) || '',
+            doc_id: (m.metadata && m.metadata.doc_id) || ''
+        }));
+}

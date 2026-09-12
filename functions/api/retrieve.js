@@ -1,11 +1,9 @@
 // Admin-only semantic retrieval over the Vectorize index. Kept separate from chat so
-// retrieval quality can be tested and evaluated on its own. Plan 2's chat endpoint will
-// perform retrieval internally rather than calling this over HTTP.
+// retrieval quality can be tested and evaluated on its own. Plan 2's chat endpoint
+// performs retrieval internally via the SAME shared search() helper, so the eval that
+// runs against this endpoint measures exactly the path a student's question takes.
 
-import { authFailure, embed, json } from './_rag.js';
-
-const DEFAULT_TOP_K = 5;
-const MAX_TOP_K = 20;
+import { authFailure, json, search } from './_rag.js';
 
 export async function onRequestPost({ request, env }) {
     const denied = authFailure(request, env);
@@ -26,33 +24,22 @@ export async function onRequestPost({ request, env }) {
     if (!query) {
         return json({ error: 'query is required' }, 400);
     }
-    const topK = Math.min(Number(body.topK) || DEFAULT_TOP_K, MAX_TOP_K);
 
-    let queryVector;
+    // minScore is deliberately NOT applied here. This endpoint reports what the
+    // index actually returned, scores included, so the eval can measure the score
+    // DISTRIBUTION and re-derive the chat's floor from it. Applying the floor here
+    // would hide exactly the numbers the eval exists to observe.
+    let matches;
     try {
-        const vectors = await embed(env, [query]);
-        queryVector = vectors[0];
+        // topK is validated and clamped inside search() (1..MAX_TOP_K).
+        matches = await search(env, query, { topK: body.topK });
     } catch (e) {
-        return json({ error: `Embedding failed: ${String(e && e.message)}` }, 502);
+        if (e && e.stage === 'binding') {
+            return json({ error: 'VECTORIZE binding is not configured' }, 500);
+        }
+        const label = e && e.stage === 'embed' ? 'Embedding' : 'Query';
+        return json({ error: `${label} failed: ${String(e && e.message)}` }, 502);
     }
-
-    let result;
-    try {
-        result = await env.VECTORIZE.query(queryVector, {
-            topK,
-            returnMetadata: 'all'
-        });
-    } catch (e) {
-        return json({ error: `Query failed: ${String(e && e.message)}` }, 502);
-    }
-
-    const matches = (result.matches || []).map((m) => ({
-        id: m.id,
-        score: m.score,
-        text: (m.metadata && m.metadata.text) || '',
-        section: (m.metadata && m.metadata.section) || '',
-        doc_id: (m.metadata && m.metadata.doc_id) || ''
-    }));
 
     return json({ matches });
 }
