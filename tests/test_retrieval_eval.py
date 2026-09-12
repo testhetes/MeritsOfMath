@@ -108,7 +108,23 @@ def wait_for_index_to_settle(base_url, auth_headers):
         assert response.status_code == 200, (
             f"rag-status check failed with HTTP {response.status_code}"
         )
-        index = response.json().get("index") or {}
+        payload = response.json()
+        index = payload.get("index")
+        # A null `index` means the VECTORIZE binding is missing from the
+        # deployment — a misconfiguration, not a slow index. Waiting 120s and
+        # then reporting "did not settle" describes the wrong problem, which
+        # is exactly the ambiguity authFailure() was built to remove. Say so
+        # at once.
+        if index is None:
+            pytest.fail(
+                "rag-status reports no index: the VECTORIZE binding is "
+                "missing from this deployment. Bindings are applied at BUILD "
+                "time, so adding one in the Cloudflare dashboard has no "
+                "effect until the project is redeployed. Nothing here is a "
+                "settling problem — see docs/RAG-OPERATIONS.md."
+            )
+        if "error" in index:
+            pytest.fail(f"rag-status could not describe the index: {index['error']}")
         count = index.get("vectorCount")
 
         if count is not None and count == previous_count:
