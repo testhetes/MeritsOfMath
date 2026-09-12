@@ -29,7 +29,7 @@
 
 ---
 
-## Task 0: clear the residual findings from Plan 1
+### Task 0: clear the residual findings from Plan 1
 
 Plan 1's fix wave was re-reviewed and passed — all eleven findings addressed, no Critical or Important breakage, and the branch was judged safe to build on. Six **Minor** items were left open and adjudicated by the controller rather than sent round another fix loop. Five are cleared here because they are cheap and two of them protect against the worst bug the reviews found. No deploy is needed: this task touches only Python, tests and docs.
 
