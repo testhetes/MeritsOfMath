@@ -27,6 +27,53 @@
 
 ---
 
+## Task 0: clear the residual findings from Plan 1
+
+Plan 1's fix wave was re-reviewed and passed — all eleven findings addressed, no Critical or Important breakage, and the branch was judged safe to build on. Six **Minor** items were left open and adjudicated by the controller rather than sent round another fix loop. Five are cleared here because they are cheap and two of them protect against the worst bug the reviews found. No deploy is needed: this task touches only Python, tests and docs.
+
+**Files:**
+- Modify: `docs/RAG-OPERATIONS.md`
+- Modify: `scripts/rag/upload.py`
+- Modify: `tests/test_retrieval_eval.py`
+
+- [ ] **Step 1: Correct the runbook's auth claim**
+
+`docs/RAG-OPERATIONS.md:35-37,44` states that all four endpoints require the `INGEST_SECRET` bearer token, that none is reachable by a student, and that `/api/chat` "retrieves in-process". All three are false: `functions/api/chat.js` contains no `authFailure`, no `authorized` and no reference to `INGEST_SECRET`, and it performs no retrieval — that is this plan's Task 1, unbuilt.
+
+This matters more than a typo: it is the one document written for someone new to the project, and it makes a security claim that is wrong in the permissive direction. Rewrite those lines to say that `/api/ingest`, `/api/retrieve` and `/api/rag-status` are secret-gated, and that `/api/chat` is deliberately public because a student's browser must reach it — which is precisely why the provider API keys live server-side.
+
+- [ ] **Step 2: Delete the stale comment that caused the 502**
+
+`scripts/rag/upload.py:40-43` still claims a 200-wide prune window is "still one request, since /api/ingest accepts 500 delete_ids". The endpoint accepts 100 (`functions/api/ingest.js:22`), the window goes out as two requests, and `DELETE_BATCH_SIZE` five lines below already says so. This exact belief is what made pruning fail against the live index until it was fixed. Correct the comment to state the real limit and that the window is batched.
+
+- [ ] **Step 3: Prune a lesson that empties to zero chunks**
+
+`scripts/rag/upload.py:119-120` returns on `if not chunks:` *before* the prune block, so emptying a lesson's content leaves every one of its old vectors live and retrievable — while `main()` prints `"0 chunks (pruned + confirmed applied)"`, which is false on that path. Shrinking 7→5 is handled; 7→0 is not.
+
+Move the early return so the prune still runs for a zero-chunk document, or prune before the guard. Add an offline test asserting that a zero-chunk document still produces a prune request covering `:0000` upward.
+
+- [ ] **Step 4: Extend the score-floor guard to unaccented queries**
+
+This is the important one. `tests/test_retrieval_eval.py:319` asserts every *accented* case clears `SCORE_FLOOR`, so restoring 0.45 fails on the 0.442 case. But the unaccented ratchet asserts top-3 **rank**, not score, and genuine unaccented retrievals run down to **0.347**. So a future tightening to 0.40 or 0.42 would pass the entire suite while silently re-disabling grounding for children who type without diacritics — exactly the harm that made 0.45 unacceptable.
+
+Add an assertion that the minimum best-score across unaccented variants that retrieve at all is also `>= SCORE_FLOOR`. Then no value above 0.347 can be adopted without a test failing.
+
+- [ ] **Step 5: Stop the reporting test erroring on an empty list**
+
+`tests/test_retrieval_eval.py:401` calls `min()` on the unaccented scores, which raises `ValueError` if no variant retrieves anything — turning a legible ratchet failure into a traceback. Guard it so the ratchet fails with its own message.
+
+- [ ] **Step 6: Run the suite and commit**
+
+```powershell
+Remove-Item Env:INGEST_SECRET,Env:RAG_BASE_URL,Env:RAG_ALLOW_PROD_WRITES -ErrorAction SilentlyContinue
+python -m pytest tests -v
+```
+Then the live read-only run. Commit each step or tightly related pair separately.
+
+**Deliberately NOT fixed — parked with a ruling.** `tests/test_ingest.py:36-61`'s gated `test_upserts_chunks` re-creates `test-doc:0000`/`0001` and removes them in a `finally` block, but asserts on the *requested* delete count rather than a Vectorize-confirmed deletion, and does not wait on the delete mutation. So a writes-mode run puts those two vectors back for a settling window, and an interrupted run could leave them. Ruling: leave it. The write gate means this only happens when someone deliberately sets `RAG_ALLOW_PROD_WRITES=1`, the `finally` block plus a post-run `get_by_ids` check confirmed the index empty of them, and Vectorize's `deleteByIds` returns only a `mutationId` — so no assertion on a count can ever prove a vector is gone. Fixing it properly means the test polling `processedUpToMutation`, which is worth doing only if this ever bites.
+
+---
+
 ## Pre-flight: verify free-tier headroom
 
 **Do this before Task 1.** Every student message will cost one embedding call plus one vector query on top of the AI call. Nobody has checked those ceilings, and discovering them by having the tutor die in front of a classroom is the worst way to find out. This is measurement and arithmetic, not code — no commit required beyond the runbook update.
