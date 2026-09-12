@@ -350,6 +350,38 @@ def test_unaccented_variants_still_retrieve_their_document(score_table):
     )
 
 
+def test_unaccented_variants_that_retrieve_clear_the_score_floor(score_table):
+    """Extends the score-floor guard to unaccented queries.
+
+    test_expected_document_clears_the_score_floor above only checks ACCENTED
+    cases, whose measured minimum is 0.442 -- comfortably above SCORE_FLOOR,
+    so it would not notice a floor tightened to 0.40 or even 0.44. The
+    aggregate ratchet just above this checks RANK (top-3 containment), never
+    score. Genuine unaccented retrievals run as low as 0.347, so a future
+    SCORE_FLOOR raised to 0.40 would pass every existing assertion in this
+    file while silently making chat.js discard unaccented matches it used to
+    keep -- exactly the harm the discredited 0.45 floor caused, for children
+    typing without diacritics, which on a plain Vietnamese keyboard is most
+    of them.
+
+    Only variants that retrieved their document AT ALL are considered:
+    best_score is 0.0 for one that didn't, and 0.0 is not a meaningful score
+    to floor-check -- that miss is already what the rank ratchet above
+    exists to catch, and folding it in here would fail this test for the
+    wrong reason.
+    """
+    rows = _by_kind(score_table, "unaccented")
+    retrieved = [r["best_score"] for r in rows if r["best_score"] > 0]
+    assert retrieved, "no unaccented variant retrieved its document at all"
+    worst = min(retrieved)
+    assert worst >= SCORE_FLOOR, (
+        f"the weakest unaccented retrieval that matched at all scored "
+        f"{worst:.3f}, below the {SCORE_FLOOR} floor -- raising SCORE_FLOOR "
+        f"above 0.347 would make chat silently drop genuine unaccented "
+        f"matches, re-creating the harm the old 0.45 floor caused"
+    )
+
+
 @pytest.mark.parametrize("case", NEGATIVES,
                          ids=[c["query"] for c in NEGATIVES])
 def test_negative_case_does_not_look_more_relevant_than_it_is(
@@ -425,20 +457,33 @@ def test_score_distribution_is_reported(pytestconfig, score_table):
     unacc = [r["best_score"] for r in _by_kind(score_table, "unaccented")
              if r["best_score"] > 0]
     noise = [r["top_score"] for r in _by_kind(score_table, "negative")]
+
+    def _range(values):
+        # min()/max() raise ValueError on an empty list -- e.g. if literally
+        # no unaccented variant retrieved anything. That is a real ratchet
+        # failure and test_unaccented_variants_still_retrieve_their_document
+        # above already fails for it with a legible message; this reporting
+        # test must not ALSO blow up with a bare traceback for the same
+        # underlying cause.
+        if not values:
+            return "n=0   (none retrieved)"
+        return f"n={len(values):<3} min={min(values):.3f} max={max(values):.3f}"
+
     lines += [
         "-" * 104,
-        f"accented positives   n={len(genuine):<3} "
-        f"min={min(genuine):.3f} max={max(genuine):.3f}",
-        f"unaccented retrieved n={len(unacc):<3} "
-        f"min={min(unacc):.3f} max={max(unacc):.3f} "
+        f"accented positives   {_range(genuine)}",
+        f"unaccented retrieved {_range(unacc)} "
         f"({len(unacc)}/{len(CASES)} retrieved at all)",
-        f"negatives            n={len(noise):<3} "
-        f"min={min(noise):.3f} max={max(noise):.3f}",
-        f"MARGIN worst genuine {min(genuine + unacc):.3f} - best noise "
-        f"{max(noise):.3f} = {min(genuine + unacc) - max(noise):+.3f} "
-        f"(negative => the populations overlap; no floor separates them)",
-        "",
+        f"negatives            {_range(noise)}",
     ]
+    genuine_and_unacc = genuine + unacc
+    if genuine_and_unacc and noise:
+        lines.append(
+            f"MARGIN worst genuine {min(genuine_and_unacc):.3f} - best noise "
+            f"{max(noise):.3f} = {min(genuine_and_unacc) - max(noise):+.3f} "
+            f"(negative => the populations overlap; no floor separates them)"
+        )
+    lines.append("")
     for line in lines:
         reporter.write_line(line)
 
