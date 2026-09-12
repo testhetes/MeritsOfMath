@@ -21,7 +21,8 @@
 - **Bilingual, Vietnamese by default.** UI strings live in `window.I18n`; the tutor replies in the student's selected language.
 - **Secrets are never committed, printed, or echoed.** Not in code, tests, reports, or terminal output. Two local leaks have already occurred on this project.
 - **Existing endpoints are done.** Do not modify `functions/api/_rag.js`, `ingest.js`, `retrieve.js`, or `rag-status.js`. Do not modify anything under `content/`. (Plan 1's final fix wave added `search()` to `_rag.js` specifically so this plan could consume it without editing that file.)
-- **Chunk score floor:** `0.45`, re-derived by Plan 1's final fix wave from the full eval distribution — positive cases, negative cases (off-topic input and short replies like "5"), and unaccented variants. If that fix wave reported a different value, that value governs and this line must be updated before Task 1 begins.
+- **Chunk score floor:** `0.30`, and it is a **garbage filter, not a relevance gate**. Plan 1's fix wave re-derived this against the whole distribution (88 vectors, 16 accented cases, 16 unaccented variants, 14 negative probes) and found the populations *overlap and invert at the boundary*: accented positives run 0.442–0.723, unaccented positives 0.347–0.572, negatives 0.347–0.505. The best negative (0.505) outscores the weakest genuine hit (0.442). **No absolute threshold separates relevant from irrelevant on this index.** The previous 0.45 was wrong in both directions at once — admitting 5 of 14 negatives while rejecting one accented positive and ten of sixteen unaccented ones, i.e. silently disabling grounding for children who type without diacritics.
+- **Relevance therefore comes from the query and the prompt, not the score.** Two things do the work a threshold cannot: the two-turn query (below), which scores 0.659–0.750 on this index and clears every negative; and the system prompt's explicit instruction to ignore reference material that does not fit. That instruction is load-bearing — do not soften it.
 - **Writing to production is opt-in.** Tests that write to the index run only when `RAG_ALLOW_PROD_WRITES=1` is set. Nothing in this plan writes to the index, so no task here should set it.
 
 ---
@@ -204,10 +205,16 @@ At the top of `functions/api/chat.js`, immediately after the header comment bloc
 ```js
 import { search } from './_rag.js';
 
-// Retrieval tuning. MIN_SCORE must match the floor Plan 1's final fix wave re-derived from
-// the eval (see Global Constraints) — update both together if it changes.
+// Retrieval tuning. MIN_SCORE is a GARBAGE FILTER, not a relevance gate — it sits below
+// every genuine retrieval that was measured (accented positives 0.442-0.723, unaccented
+// 0.347-0.572) because the negative population (0.347-0.505) OVERLAPS the positive one.
+// No cosine threshold separates them on this index, so raising this number does not buy
+// precision; it just switches grounding off for children who type without diacritics.
+// Relevance comes from buildRetrievalQuery() below and from the prompt's instruction to
+// ignore reference that does not fit. See tests/test_retrieval_eval.py for the full
+// distribution and the test that fails if anyone reintroduces a separating-floor assumption.
 const RETRIEVAL_TOP_K = 5;
-const MIN_SCORE = 0.45;
+const MIN_SCORE = 0.30;
 // Retrieval runs before the LLM call on every turn, so it adds directly to the student's
 // wait. Past this budget we answer ungrounded rather than make a child stare at dots.
 const RETRIEVAL_TIMEOUT_MS = 1800;
@@ -303,7 +310,9 @@ function buildSocraticPrompt(chunks, lang) {
             '',
             'Use the reference to ask sharper questions and to recognise the mistakes it describes.',
             'NEVER quote it, never mention that you have it, and never read out a worked solution or a final answer from it.',
-            'If it does not fit what the student asked, ignore it and rely on your own knowledge.'
+            'The reference is selected by similarity, so some or all of it may be about a DIFFERENT topic than the student asked about.',
+            'Judge it yourself. If a passage does not fit the question, ignore that passage completely — do not stretch the conversation toward it, and do not steer the student to the topic it covers.',
+            'It is always better to answer from your own knowledge of primary-school maths than to follow reference material that does not match what the student actually asked.'
         );
     }
 
