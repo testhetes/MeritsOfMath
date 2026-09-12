@@ -1,0 +1,26 @@
+[
+  {
+    "query": "Hôm nay trời mưa to quá, em quên mang áo mưa nên bị ướt hết cả cặp.",
+    "why": "off-topic: weather and a wet schoolbag, no mathematics anywhere in the curriculum"
+  },
+  {
+    "query": "Em thích xem phim hoạt hình và chơi đá bóng với các bạn vào buổi chiều.",
+    "why": "off-topic: hobbies, fluent Vietnamese in the same register as the lessons"
+  },
+  {
+    "query": "asdkfj qwpoei zxcvbnm lkjhgf",
+    "why": "gibberish: keyboard mashing, which children do produce"
+  },
+  {
+    "query": "5",
+    "why": "short mid-conversation reply: a bare answer to the tutor's question"
+  },
+  {
+    "query": "em không biết",
+    "why": "short mid-conversation reply: the single most common thing a stuck child types"
+  },
+  {
+    "query": "dạ",
+    "why": "short mid-conversation reply: acknowledgement, carries no topic at all"
+  }
+]
