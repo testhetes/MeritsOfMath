@@ -1,10 +1,23 @@
-// Admin-only ingestion: embeds chunks with Workers AI and upserts them into Vectorize.
+// Admin-only ingestion: embeds chunks with Workers AI and upserts them into Vectorize,
+// and — via the optional delete_ids — removes vectors. Every write to the index goes
+// through this one secret-gated endpoint.
+//
 // Index-time embeddings deliberately share the same helper as query-time embeddings
 // (see rag-status.js) so the two can never drift apart.
+//
+// Both operations return Vectorize's mutationId. That id is the ONLY reliable signal
+// that a write has actually been applied: Vectorize is eventually consistent, and
+// vectorCount cannot detect a same-count re-upload (re-uploading a document whose
+// chunk count is unchanged leaves the count identical, so a settle-wait that watches
+// the count returns immediately and reads the OLD vectors). rag-status reports
+// `processedUpToMutation`; a caller polls that until it reaches this id.
 
 import { authFailure, embed, json } from './_rag.js';
 
 const MAX_CHUNKS_PER_REQUEST = 50;
+// Deletions carry no payload beyond an id, so a far larger batch is safe. The
+// uploader's prune step sends one window of ~200 ids per document.
+const MAX_DELETE_IDS_PER_REQUEST = 500;
 const MAX_TEXT_CHARS = 1200;
 // Vectorize caps a vector ID at 64 BYTES, not 64 characters. Chunk IDs are
 // `{doc_id}:{chunk_index:04d}` and doc_ids are ASCII slugs today (longest is
@@ -34,8 +47,54 @@ export async function onRequestPost({ request, env }) {
     }
 
     const chunks = Array.isArray(body && body.chunks) ? body.chunks : [];
-    if (chunks.length === 0) {
+    const hasDeleteIds = body && body.delete_ids !== undefined;
+
+    if (hasDeleteIds && !Array.isArray(body.delete_ids)) {
+        return json({ error: 'delete_ids must be an array of strings' }, 400);
+    }
+    const deleteIds = hasDeleteIds ? body.delete_ids : [];
+    if (hasDeleteIds) {
+        if (deleteIds.length === 0) {
+            return json({ error: 'delete_ids must not be empty when provided' }, 400);
+        }
+        if (deleteIds.length > MAX_DELETE_IDS_PER_REQUEST) {
+            return json({
+                error: `Send at most ${MAX_DELETE_IDS_PER_REQUEST} delete_ids per request`
+            }, 400);
+        }
+        for (const id of deleteIds) {
+            if (typeof id !== 'string' || !id.trim()) {
+                return json({ error: 'Each delete_ids entry must be a non-blank string' }, 400);
+            }
+            if (idByteLength(id) > MAX_ID_BYTES) {
+                return json({
+                    error: `delete_ids entry exceeds Vectorize's ${MAX_ID_BYTES}-byte id limit`
+                }, 400);
+            }
+        }
+    }
+
+    // chunks[] stays exactly as strict as before. It becomes optional ONLY when
+    // delete_ids was supplied, so a delete-only request is possible; a request
+    // with neither is still the same 400 it has always been.
+    if (chunks.length === 0 && !hasDeleteIds) {
         return json({ error: 'chunks[] is required and must not be empty' }, 400);
+    }
+    if (chunks.length === 0 && hasDeleteIds) {
+        // Delete-only request: skip embedding entirely.
+        let deleteMutationId = null;
+        try {
+            const deleted = await env.VECTORIZE.deleteByIds(deleteIds);
+            deleteMutationId = (deleted && deleted.mutationId) || null;
+        } catch (e) {
+            return json({ error: `Delete failed: ${String(e && e.message)}` }, 502);
+        }
+        return json({
+            upserted: 0,
+            mutationId: null,
+            deleted: deleteIds.length,
+            deleteMutationId
+        });
     }
     if (chunks.length > MAX_CHUNKS_PER_REQUEST) {
         return json({ error: `Send at most ${MAX_CHUNKS_PER_REQUEST} chunks per request` }, 400);
@@ -80,11 +139,31 @@ export async function onRequestPost({ request, env }) {
         metadata: { ...(c.metadata || {}), text: c.text }
     }));
 
+    let mutationId = null;
     try {
-        await env.VECTORIZE.upsert(records);
+        const upserted = await env.VECTORIZE.upsert(records);
+        mutationId = (upserted && upserted.mutationId) || null;
     } catch (e) {
         return json({ error: `Upsert failed: ${String(e && e.message)}` }, 502);
     }
 
-    return json({ upserted: records.length });
+    // Deletions run AFTER the upsert so their mutationId is the later of the two.
+    // processedUpToMutation is a watermark, so waiting on the later id implies the
+    // upsert has been applied too.
+    let deleteMutationId = null;
+    if (deleteIds.length > 0) {
+        try {
+            const deleted = await env.VECTORIZE.deleteByIds(deleteIds);
+            deleteMutationId = (deleted && deleted.mutationId) || null;
+        } catch (e) {
+            return json({ error: `Delete failed: ${String(e && e.message)}` }, 502);
+        }
+    }
+
+    return json({
+        upserted: records.length,
+        mutationId,
+        deleted: deleteIds.length,
+        deleteMutationId
+    });
 }

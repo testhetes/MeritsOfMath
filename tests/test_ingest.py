@@ -34,10 +34,47 @@ def test_rejects_null_body(base_url, auth_headers):
 
 
 def test_upserts_chunks(allow_prod_writes, base_url, auth_headers):
-    r = requests.post(f"{base_url}/api/ingest", json={"chunks": FIXTURE},
-                      headers=auth_headers, timeout=120)
+    """Upsert the two fixture vectors, then delete them again.
+
+    These fixtures are the only unaccented text in an otherwise fully
+    accented Vietnamese index, so leaving them behind lets an unaccented
+    student question retrieve test data as if it were curriculum. The
+    cleanup uses the same delete_ids path the uploader's prune step uses,
+    so this test also exercises it.
+    """
+    try:
+        r = requests.post(f"{base_url}/api/ingest", json={"chunks": FIXTURE},
+                          headers=auth_headers, timeout=120)
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["upserted"] == 2
+        # I3: the mutationId is the only signal that a write has landed.
+        assert body.get("mutationId"), f"no mutationId in response: {body}"
+    finally:
+        cleanup = requests.post(
+            f"{base_url}/api/ingest",
+            json={"delete_ids": [c["id"] for c in FIXTURE]},
+            headers=auth_headers, timeout=120,
+        )
+        assert cleanup.status_code == 200, cleanup.text
+        assert cleanup.json()["deleted"] == 2
+
+
+def test_delete_only_request_returns_a_mutation_id(
+        allow_prod_writes, base_url, auth_headers):
+    """Deleting ids that do not exist is harmless — that is what makes the
+    uploader's blind prune window safe — but it is still a mutation, so it
+    must report a mutationId and run only behind the prod-write gate."""
+    r = requests.post(
+        f"{base_url}/api/ingest",
+        json={"delete_ids": ["no-such-doc:9998", "no-such-doc:9999"]},
+        headers=auth_headers, timeout=120,
+    )
     assert r.status_code == 200, r.text
-    assert r.json()["upserted"] == 2
+    body = r.json()
+    assert body["upserted"] == 0
+    assert body["deleted"] == 2
+    assert body.get("deleteMutationId"), f"no deleteMutationId: {body}"
 
 
 # --------------------------------------------------------------------------
@@ -75,6 +112,49 @@ def test_rejects_id_that_is_short_in_characters_but_long_in_bytes(
 def test_rejects_blank_id(base_url, auth_headers):
     chunk = {"id": "   ", "text": "Mot doan van ban ngan.", "metadata": {}}
     r = _ingest(base_url, auth_headers, [chunk])
+    assert r.status_code == 400, r.text
+
+
+# --------------------------------------------------------------------------
+# delete_ids validation (I3). All rejected before any mutation is issued.
+# --------------------------------------------------------------------------
+
+def _post(base_url, auth_headers, body):
+    return requests.post(f"{base_url}/api/ingest", json=body,
+                         headers=auth_headers, timeout=60)
+
+
+def test_rejects_non_array_delete_ids(base_url, auth_headers):
+    r = _post(base_url, auth_headers, {"delete_ids": "test-doc:0000"})
+    assert r.status_code == 400, r.text
+
+
+def test_rejects_empty_delete_ids(base_url, auth_headers):
+    r = _post(base_url, auth_headers, {"delete_ids": []})
+    assert r.status_code == 400, r.text
+
+
+def test_rejects_non_string_delete_ids(base_url, auth_headers):
+    r = _post(base_url, auth_headers, {"delete_ids": ["ok:0000", 17]})
+    assert r.status_code == 400, r.text
+
+
+def test_rejects_blank_delete_id(base_url, auth_headers):
+    r = _post(base_url, auth_headers, {"delete_ids": ["ok:0000", "  "]})
+    assert r.status_code == 400, r.text
+
+
+def test_rejects_too_many_delete_ids(base_url, auth_headers):
+    r = _post(base_url, auth_headers,
+              {"delete_ids": [f"bulk:{i:04d}" for i in range(501)]})
+    assert r.status_code == 400, r.text
+
+
+def test_still_rejects_a_request_with_neither_chunks_nor_delete_ids(
+        base_url, auth_headers):
+    """delete_ids made chunks[] optional; it must not have made an empty
+    request acceptable."""
+    r = _post(base_url, auth_headers, {})
     assert r.status_code == 400, r.text
 
 
