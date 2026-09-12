@@ -40,7 +40,9 @@ BATCH_SIZE = 25
 # How far above the current chunk count to prune. A document would have to
 # lose more than this many chunks in a single edit for a stale vector to
 # survive; 200 is far beyond any realistic lesson (the largest today is 9
-# chunks) and still one request, since /api/ingest accepts 500 delete_ids.
+# chunks). /api/ingest's real limit is 100 delete_ids per request (Vectorize's
+# own hard limit on deleteByIds — see functions/api/ingest.js), so this
+# 200-wide window goes out as TWO requests, batched by DELETE_BATCH_SIZE below.
 PRUNE_WINDOW = 200
 
 # Vectorize rejects more than 100 ids in one deleteByIds call (error 40007), so
