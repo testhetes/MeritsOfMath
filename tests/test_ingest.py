@@ -38,3 +38,53 @@ def test_upserts_chunks(allow_prod_writes, base_url, auth_headers):
                       headers=auth_headers, timeout=120)
     assert r.status_code == 200, r.text
     assert r.json()["upserted"] == 2
+
+
+# --------------------------------------------------------------------------
+# ID validation (M3). Every case here must be rejected with 400 BEFORE
+# anything is embedded or upserted, so none of them needs the prod-write gate.
+# --------------------------------------------------------------------------
+
+def _ingest(base_url, auth_headers, chunks):
+    return requests.post(f"{base_url}/api/ingest", json={"chunks": chunks},
+                         headers=auth_headers, timeout=60)
+
+
+def test_rejects_id_longer_than_64_bytes(base_url, auth_headers):
+    chunk = {"id": "x" * 65, "text": "Mot doan van ban ngan.", "metadata": {}}
+    r = _ingest(base_url, auth_headers, [chunk])
+    assert r.status_code == 400, r.text
+
+
+def test_rejects_id_that_is_short_in_characters_but_long_in_bytes(
+        base_url, auth_headers):
+    """The Vectorize limit is 64 BYTES, not 64 characters.
+
+    30 copies of 'ế' is 30 characters but 90 UTF-8 bytes. A server that
+    measured `id.length` would accept this and then either be rejected by
+    Vectorize or silently truncate. This is the case that proves the check
+    measures bytes.
+    """
+    long_id = "ế" * 30
+    assert len(long_id) < 64 < len(long_id.encode("utf-8"))
+    chunk = {"id": long_id, "text": "Mot doan van ban ngan.", "metadata": {}}
+    r = _ingest(base_url, auth_headers, [chunk])
+    assert r.status_code == 400, r.text
+
+
+def test_rejects_blank_id(base_url, auth_headers):
+    chunk = {"id": "   ", "text": "Mot doan van ban ngan.", "metadata": {}}
+    r = _ingest(base_url, auth_headers, [chunk])
+    assert r.status_code == 400, r.text
+
+
+def test_rejects_duplicate_ids_within_one_batch(base_url, auth_headers):
+    """Two chunks sharing an id is an upsert racing itself: one text wins
+    arbitrarily and the caller is told both were stored."""
+    chunks = [
+        {"id": "dup-guard:0000", "text": "Van ban thu nhat.", "metadata": {}},
+        {"id": "dup-guard:0000", "text": "Van ban thu hai.", "metadata": {}},
+    ]
+    r = _ingest(base_url, auth_headers, chunks)
+    assert r.status_code == 400, r.text
+    assert "uplicate" in r.json().get("error", ""), r.text

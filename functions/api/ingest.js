@@ -6,6 +6,17 @@ import { authFailure, embed, json } from './_rag.js';
 
 const MAX_CHUNKS_PER_REQUEST = 50;
 const MAX_TEXT_CHARS = 1200;
+// Vectorize caps a vector ID at 64 BYTES, not 64 characters. Chunk IDs are
+// `{doc_id}:{chunk_index:04d}` and doc_ids are ASCII slugs today (longest is
+// 39 bytes), but a Vietnamese-titled file would produce a multi-byte id where
+// the character count understates the byte count. Measure bytes.
+const MAX_ID_BYTES = 64;
+
+const encoder = new TextEncoder();
+
+function idByteLength(id) {
+    return encoder.encode(id).length;
+}
 
 export async function onRequestPost({ request, env }) {
     const denied = authFailure(request, env);
@@ -29,13 +40,29 @@ export async function onRequestPost({ request, env }) {
     if (chunks.length > MAX_CHUNKS_PER_REQUEST) {
         return json({ error: `Send at most ${MAX_CHUNKS_PER_REQUEST} chunks per request` }, 400);
     }
+    const seenIds = new Set();
     for (const c of chunks) {
         if (!c || typeof c.id !== 'string' || typeof c.text !== 'string' || !c.text.trim()) {
             return json({ error: 'Each chunk needs a string id and non-empty text' }, 400);
         }
+        if (!c.id.trim()) {
+            return json({ error: 'Chunk id must not be blank' }, 400);
+        }
         if (c.text.length > MAX_TEXT_CHARS) {
             return json({ error: `Chunk ${c.id} exceeds ${MAX_TEXT_CHARS} characters` }, 400);
         }
+        if (idByteLength(c.id) > MAX_ID_BYTES) {
+            return json({
+                error: `Chunk id ${c.id} exceeds Vectorize's ${MAX_ID_BYTES}-byte id limit`
+            }, 400);
+        }
+        // A batch containing the same id twice is an upsert racing itself: only
+        // one of the two texts survives, chosen arbitrarily, and the caller is
+        // told all n were upserted. Almost always a chunker bug. Reject it.
+        if (seenIds.has(c.id)) {
+            return json({ error: `Duplicate chunk id in this request: ${c.id}` }, 400);
+        }
+        seenIds.add(c.id);
     }
 
     let vectors;
