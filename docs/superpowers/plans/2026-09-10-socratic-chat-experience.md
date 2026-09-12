@@ -26,6 +26,58 @@
 
 ---
 
+## Pre-flight: verify free-tier headroom
+
+**Do this before Task 1.** Every student message will cost one embedding call plus one vector query on top of the AI call. Nobody has checked those ceilings, and discovering them by having the tutor die in front of a classroom is the worst way to find out. This is measurement and arithmetic, not code — no commit required beyond the runbook update.
+
+- [ ] **Step 1: Read the current published limits**
+
+Fetch and record the free-tier limits that actually apply, rather than trusting numbers from memory:
+
+- Workers AI free allocation (the daily neuron allowance): `https://developers.cloudflare.com/workers-ai/platform/pricing/`
+- Vectorize free-tier limits (stored dimensions, queried dimensions per month): `https://developers.cloudflare.com/vectorize/platform/limits/`
+- Groq's free-tier rate limits for `llama-3.3-70b-versatile`: `https://console.groq.com/docs/rate-limits`
+
+- [ ] **Step 2: Measure what one message actually costs**
+
+Time 10 sequential calls to `/api/retrieve` and record p50 and p95 latency:
+
+```powershell
+$env:INGEST_SECRET = [Environment]::GetEnvironmentVariable('INGEST_SECRET','User')
+python -c @"
+import os, time, requests, statistics
+s = os.environ['INGEST_SECRET']
+qs = ['Phân số là gì?', 'Làm sao để cộng có nhớ?', 'Chia 17 cho 5 thì dư mấy?', 'Tính chu vi hình vuông thế nào?', 'Số thập phân là gì?']
+t = []
+for i in range(10):
+    q = qs[i % len(qs)]
+    a = time.perf_counter()
+    r = requests.post('https://meritsofmath.pages.dev/api/retrieve', json={'query': q, 'topK': 5}, headers={'Authorization': f'Bearer {s}'}, timeout=60)
+    t.append(time.perf_counter() - a)
+    assert r.status_code == 200, r.text
+t.sort()
+print(f'retrieve p50={statistics.median(t)*1000:.0f}ms  p95={t[int(len(t)*0.95)-1]*1000:.0f}ms  min={t[0]*1000:.0f}ms  max={t[-1]*1000:.0f}ms')
+"@
+```
+
+Record the numbers. This p95 is what the `RETRIEVAL_TIMEOUT_MS` budget in Task 1 must comfortably exceed — if p95 is already near 1800ms, raise the budget or reduce `topK`, and say so.
+
+- [ ] **Step 3: Compute headroom and write it down**
+
+From the limits and the measurement, state plainly:
+
+- Embeddings available per day, and therefore **messages per day** before Workers AI's allowance is exhausted.
+- Vectorize queried-dimension budget per month, and therefore messages per month.
+- Groq's requests-per-minute ceiling, and therefore **how many children can chat simultaneously** before requests start falling through to the next provider.
+
+Add a "Capacity" section to `docs/RAG-OPERATIONS.md` with these figures, the date, and the arithmetic, so the next person does not have to redo it.
+
+- [ ] **Step 4: Gate**
+
+If the headroom works out below roughly **500 messages/day**, or if fewer than about **5 children could chat at once**, STOP and report it before building anything. That is a product decision — it may mean a paid tier, a different embedding model, or caching — and it is far cheaper to know now than after the chat UI exists.
+
+---
+
 ### Task 1: Grounded Socratic replies in `/api/chat`
 
 Adds retrieval and the Socratic system prompt to the existing proxy, behind an opt-in `ground` flag so the current game frontend keeps working untouched until Task 4 retires it.
@@ -498,6 +550,64 @@ Expected: pass. If the tutor leaks answers in 2 or more cases, **do not weaken t
 git add tests/evals/tutor_behaviour_cases.json tests/test_tutor_behaviour.py
 git commit -m "test(chat): add tutor behaviour eval for answer withholding"
 ```
+
+---
+
+## Checkpoint: a human reads the tutor's actual replies
+
+**Stop here. Do not start Task 3 until the user has answered.**
+
+Task 2 proves the tutor *refuses to give answers*. Nothing so far proves its replies are any **good** — whether the question it asks instead helps a seven-year-old, whether its Vietnamese sounds like a warm teacher or a stiff textbook, whether it pitches at the right level. No automated test can judge that, and this project has already been bitten by it once: an earlier version of the tutor drew the response *"the socratic questions aren't what I wanted, it should guide way clearer."*
+
+Tuning the prompt is cheap. Rebuilding a chat UI around a tutor that turns out to be unhelpful is not. So the judgement happens before the UI, not after.
+
+- [ ] **Step 1: Collect ten real exchanges**
+
+Run ten realistic first messages through the grounded endpoint and write the replies to a file, verbatim. Cover the range a real child produces — a clear question, a vague one, a wrong answer offered confidently, a one-word reply, and a request for the answer:
+
+```powershell
+$env:RAG_BASE_URL = "https://meritsofmath.pages.dev"
+python -c @"
+import json, requests, pathlib
+msgs = [
+  'Phép cộng có nhớ là gì ạ?',
+  'Em không hiểu bài phân số',
+  'Con em học lớp 2, cứ quên mượn 1 khi trừ',
+  '9 + 6 em tính ra 14, đúng chưa cô?',
+  'Tính chu vi hình chữ nhật thế nào ạ?',
+  'Em chịu, khó quá',
+  'Tại sao 1/2 + 1/3 không phải 2/5 ạ?',
+  'dạ',
+  'Số thập phân là gì cô ơi?',
+  '48 chia 6 bằng mấy ạ? Nói đáp án luôn đi cô',
+]
+out = []
+for m in msgs:
+    r = requests.post('https://meritsofmath.pages.dev/api/chat',
+                      json={'messages': [{'role': 'user', 'content': m}], 'ground': True, 'lang': 'vi', 'max_tokens': 220},
+                      timeout=90)
+    reply = r.json()['choices'][0]['message']['content'] if r.status_code == 200 else f'ERROR {r.status_code}'
+    chunks = r.headers.get('X-RAG-Chunks', '-')
+    out.append(f'### HỌC SINH: {m}\n\n(retrieved {chunks} chunks)\n\nGIA SƯ: {reply}\n')
+pathlib.Path('tutor-samples.md').write_text('\n'.join(out), encoding='utf-8')
+print('\n'.join(out))
+"@
+```
+
+- [ ] **Step 2: Put them in front of the user and wait**
+
+Show all ten exchanges and ask specifically:
+
+- Would a child of that grade know what to do next after reading each reply?
+- Does the Vietnamese sound like a teacher speaking to a child, or like a textbook?
+- Is anything condescending, confusing, or too abstract?
+- Did it ever hand over an answer, hint too strongly, or quote the lesson text at the child?
+
+- [ ] **Step 3: Act on the answer**
+
+If the user is satisfied, delete `tutor-samples.md` (it is a scratch artefact, not a deliverable) and proceed to Task 3.
+
+If not, revise the `buildSocraticPrompt` rules in Task 1 against the specific complaints, redeploy, and re-run this checkpoint. Record each revision and why in the report. **Do not proceed to Task 3 on an unsatisfactory tutor** — the UI is the cheap part and can wait.
 
 ---
 
@@ -995,6 +1105,31 @@ Capture a screenshot for the report.
 **Interfaces:**
 - Consumes: everything from Task 3.
 - Produces: `/` serves the chat app. Nothing later depends on this.
+
+- [ ] **Step 0: Write down the rollback before you need it**
+
+This is the riskiest step in the plan. It deletes the working app and replaces the home page, and returning visitors already hold the old files in their service worker cache — a bad transition shows them a new page requesting JavaScript that no longer exists, which is a white screen for people who were using the site happily.
+
+Record both escape routes in your report **before** making any change, so neither has to be improvised while the site is down.
+
+**Fastest rollback (no git, ~30 seconds):** Cloudflare dashboard → the Pages project → **Deployments** → find the last known-good deployment → **⋯** → **Rollback to this deployment**. Note the deployment hash of the current good one now, so you know which row to pick.
+
+**Git rollback:** capture the current `main` commit before the merge:
+
+```bash
+git rev-parse main    # record this value in the report BEFORE Step 1
+```
+
+To undo after deploying:
+
+```bash
+git checkout main
+git revert --no-edit <the merge commit this task pushes>
+git push origin main
+git checkout feat/socratic-rag-tutor
+```
+
+A revert is preferred over a force-push: it leaves history intact and triggers a normal deploy.
 
 - [ ] **Step 1: Replace index.html**
 
