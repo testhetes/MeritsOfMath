@@ -118,8 +118,13 @@ def upload_markdown_file(path: str, base_url: str, secret: str,
     doc_id = doc_id or file_path.stem
 
     chunks = chunk_markdown(md, doc_id=doc_id)
-    if not chunks:
-        return 0
+    # Deliberately no `if not chunks: return` here. A document edited down to
+    # zero chunks (its whole body removed, or withdrawn) still needs the
+    # prune block below to run: with zero chunks, every one of the doc's
+    # OLD vectors is stale, and _stale_ids(doc_id, 0, prune_window) covers
+    # exactly that — the window `{doc_id}:0000` upward. An early return here
+    # would leave those vectors live and retrievable while main() reports
+    # "0 chunks (pruned + confirmed applied)", which would be false.
 
     headers = {"Authorization": f"Bearer {secret}"}
     total = 0

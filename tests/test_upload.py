@@ -170,3 +170,40 @@ def test_wait_for_mutation_raises_rather_than_returning_on_stale_index(
     with pytest.raises(MutationTimeout):
         wait_for_mutation("https://example.invalid", "unused",
                           "target-mutation", timeout=0.05, poll_interval=0.01)
+
+
+def test_zero_chunk_document_still_prunes_from_id_zero_upward(
+        tmp_path, monkeypatch):
+    """A lesson edited down to NOTHING (or withdrawn) must not leave its old
+    vectors live and retrievable. Before this fix, `if not chunks: return 0`
+    returned before the prune block ever ran, so every one of the document's
+    previous vectors survived forever while main() printed
+    "0 chunks (pruned + confirmed applied)" — a lie on that exact path."""
+    source = tmp_path / "lesson.md"
+    source.write_text("", encoding="utf-8")  # chunk_markdown("") -> []
+
+    delete_batches = []
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        if url.endswith("/api/ingest") and "chunks" in json:
+            raise AssertionError(
+                "no chunks should ever be posted for an empty document")
+        if url.endswith("/api/ingest") and "delete_ids" in json:
+            delete_batches.append(json["delete_ids"])
+            return _FakeResponse({"upserted": 0, "mutationId": None,
+                                  "deleted": len(json["delete_ids"]),
+                                  "deleteMutationId": "delete-mutation"})
+        return _FakeResponse(
+            {"index": {"processedUpToMutation": "delete-mutation"}})
+
+    monkeypatch.setattr(upload_module.requests, "post", fake_post)
+
+    count = upload_markdown_file(str(source), base_url="https://example.invalid",
+                                 secret="unused", doc_id="lesson",
+                                 prune_window=4)
+
+    assert count == 0
+    assert delete_batches, "a zero-chunk document must still issue a prune request"
+    flat = [i for batch in delete_batches for i in batch]
+    assert flat == _stale_ids("lesson", chunk_count=0, window=4)
+    assert flat[0] == "lesson:0000"
