@@ -36,5 +36,16 @@ export async function embed(env, texts) {
     if (!Array.isArray(vectors) || vectors.length === 0) {
         throw new Error('Embedding model returned no vectors');
     }
+    // One vector per input text, in order — callers zip the two lists together
+    // positionally (ingest.js pairs vectors[i] with chunks[i]). If the model
+    // ever returned a different count, that zip would silently attach the
+    // WRONG embedding to a chunk and corrupt the index in a way no later test
+    // could detect. Fail loudly instead.
+    if (vectors.length !== texts.length) {
+        throw new Error(
+            `Embedding model returned ${vectors.length} vectors for ` +
+            `${texts.length} input texts`
+        );
+    }
     return vectors;
 }
