@@ -721,6 +721,11 @@ The tutor's core promise — that it never hands over the answer — is a behavi
 - Consumes: `POST /api/chat` with `ground: true` (Task 1).
 - Produces: a repeatable behavioural gate. No code consumed by later tasks.
 
+> **Superseded — case guards and answer matching.** The code in this task is the original design. After review, fix round 1 (commit `7f7826a`) changed two things, and **the committed `tests/test_tutor_behaviour.py` and `tests/evals/tutor_behaviour_cases.json` are authoritative**:
+>
+> - **Vacuous-pass guard.** `MIN_PASSES = len(CASES) - 1` goes negative on an empty list, so every pass rate below would hold with zero checks performed. An offline test now asserts at least 5 cases, a non-empty `forbidden` list on every case, and at least 4 off-topic messages. Each live test also asserts its list is non-empty before any threshold arithmetic. The thresholds themselves are unchanged.
+> - **Whole-token answer matching.** `f in reply` matched `"7"` inside `"17"` and `"70"`, and missed answers spelled out in words. `_leaked_answers(reply, forbidden)` now matches whole tokens (`(?<!\w)token(?!\w)`, with NFC normalisation and lowercasing on both sides). Each case's `forbidden` list also carries spelled Vietnamese forms: `mười lăm`, `bảy`, `hai mươi tư` / `hai mươi bốn` / `hai tư`, `hai mươi lăm` / `hai lăm`. Known limitation: `thứ bảy` ("Saturday") still matches when `bảy` is forbidden.
+
 - [ ] **Step 1: Create the eval cases**
 
 Create `tests/evals/tutor_behaviour_cases.json`. Each case is a student message that tries to extract the answer, plus the answer string that must NOT appear in the reply:
@@ -1586,6 +1591,32 @@ const CACHE = 'merits-v4';
 ```
 
 Change it to `'merits-v5'`. This one matters more than usual: the file's own comment says routine updates do not need a bump because same-origin files use stale-while-revalidate. But this deploy *deletes* files the old shell precached, so a returning visitor's cached game must be purged rather than revalidated.
+
+- [ ] **Step 3b: Clear the retired game's stored data**
+
+Deleting the game's files does not delete what it saved. Every browser that ever ran the old app still holds its `localStorage` values on this origin, and they stay there indefinitely unless something removes them. That includes **any Groq API key a user once pasted into the old Settings modal**. The retired code wrote exactly these five keys (found by searching the deleted files on 2026-09-14): `groqApiKey`, `localApiBaseUrl`, `localModelName`, `aiProvider` (all from `js/aiTutor.js`) and `meritsProfile_v2` (from `js/progression.js`).
+
+This step also modifies `js/chat.js`. Add near the top of the module:
+
+```js
+// Keys written by the retired skill-tree game (js/aiTutor.js, js/progression.js). That code is
+// gone, but the values persist in every visitor's browser on this origin — including any Groq
+// API key a user once pasted into the old Settings modal. Remove them. The chat's own keys,
+// meritsChatHistory and meritsLang, are deliberately NOT in this list.
+const RETIRED_KEYS = ['groqApiKey', 'localApiBaseUrl', 'localModelName', 'aiProvider', 'meritsProfile_v2'];
+
+function clearRetiredStorage() {
+    try {
+        RETIRED_KEYS.forEach((key) => localStorage.removeItem(key));
+    } catch {
+        // Storage is unavailable, so the retired game could never have stored anything here.
+    }
+}
+```
+
+Call `clearRetiredStorage()` as the **first** statement of `init()`, before `load()`. It is safe to run on every page load: removing a key that does not exist is a no-op.
+
+Verify in the Browser pane after the deploy in Step 6: set all five keys plus `meritsLang` and a small `meritsChatHistory`, reload, and confirm the five retired keys are gone while `meritsLang` and `meritsChatHistory` are both still present and the conversation still renders.
 
 - [ ] **Step 4: Verify nothing still references a deleted file**
 
