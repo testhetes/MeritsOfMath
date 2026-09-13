@@ -540,8 +540,22 @@ function buildSocraticPrompt(chunks, lang) {
         '- When the student is right, say so warmly in a few words, then ask what comes next.',
         '- Use everyday things: sweets, apples, marbles, fingers, steps.',
         '- If the student is stuck twice on the same step, make the step smaller. Do not answer it for them.',
-        '- Keep replies under about 60 words.'
+        '- Keep replies under about 60 words.',
+        '- Write any maths in LaTeX between \\( and \\). Never use $ signs for maths.'
     ];
+
+    // Vietnamese teacher-to-pupil register. Without an explicit rule, Qwen drifted between
+    // "em" (correct for a teacher speaking to a child) and "bạn" (peer register) across
+    // consecutive replies measured on 2026-09-13.
+    if (lang !== 'en') {
+        lines.push('- Speak like a Vietnamese primary-school teacher: call the student "em" and refer to yourself as "cô". Never call the student "bạn".');
+    }
+
+    // Maths delimiters matter for rendering, not just style. The chat frontend runs replies
+    // through marked, and CommonMark treats \( and \[ as escaped brackets — so the frontend
+    // has to protect maths before marked runs. The same model emitted both $...$ and \(...\)
+    // in consecutive replies, so this rule narrows the output but the frontend must still
+    // cope with either (see Task 3).
 
     if (chunks.length > 0) {
         lines.push(
@@ -1060,6 +1074,19 @@ Create `chat.html`:
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // MathJax 3 recognises only \( \) for inline maths by default. Measured on the live
+        // site, 2026-09-13: `$\frac{1}{2}$` rendered 0 formulas. The tutor model emitted both
+        // $...$ and \(...\) in consecutive replies, so both must be enabled. This config must
+        // exist BEFORE tex-mml-chtml.js loads, or MathJax starts with its defaults.
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
     <link rel="stylesheet" href="chat.css">
@@ -1139,13 +1166,37 @@ window.Chat = (function () {
         }
     }
 
+    // Maths must be shielded from marked. CommonMark treats \( \) \[ \] as escaped brackets,
+    // so marked strips the backslashes and MathJax never sees the delimiters. Measured on the
+    // live site, 2026-09-13: marked turned `\(1 + 2 + 3 = 6\)` into `(1 + 2 + 3 = 6)`, and
+    // MathJax then rendered 0 formulas. Maths spans are swapped for placeholders before marked
+    // runs and restored afterwards; the same pipeline rendered formulas that otherwise vanished.
+    // $$..$$ is listed before $..$ so display maths is not split into two inline spans.
+    const MATH_SPAN = /\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$\n]+?\$/g;
+
+    function escapeHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
     function renderMarkdown(text) {
+        const math = [];
+        const shielded = text.replace(MATH_SPAN, (span) => {
+            math.push(span);
+            return '@@MATH' + (math.length - 1) + '@@';
+        });
+
+        let html;
         if (window.marked && window.marked.parse) {
-            return window.marked.parse(text, { breaks: true });
+            html = window.marked.parse(shielded, { breaks: true });
+        } else {
+            const div = document.createElement('div');
+            div.textContent = shielded;
+            html = div.innerHTML;
         }
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+
+        // Escape on restore: a formula such as \(a<b\) would otherwise be injected as HTML.
+        // MathJax reads decoded text nodes, so &lt; still typesets as <.
+        return html.replace(/@@MATH(\d+)@@/g, (_, i) => escapeHtml(math[Number(i)]));
     }
 
     function typeset() {
@@ -1352,6 +1403,30 @@ Then open `https://meritsofmath.pages.dev/chat.html` in the Browser pane and ver
 5. `⟳` clears the conversation back to the greeting.
 6. At a 375px viewport the composer stays fixed at the bottom and the message list scrolls.
 7. The browser console shows no errors.
+8. **Maths renders — required, measured, not eyeballed.** This pipeline was measured rendering **zero** formulas before the fix: marked strips `\(` and `\[` delimiters, and MathJax ignores `$` unless configured. Do not rely on the tutor happening to emit maths; seed a known reply into the chat history so the real `renderMarkdown` → MathJax path runs deterministically. In the Browser pane on `/chat.html`:
+
+   ```js
+   localStorage.setItem('meritsChatHistory', JSON.stringify([
+     { role: 'user', content: 'kiểm tra' },
+     { role: 'assistant', content: 'Nội tuyến \\(1 + 2 = 3\\), đô la $\\frac{1}{2}$, hiển thị:\n\n\\[x^2 + 1\\]\n\nvà **đậm**.' }
+   ]));
+   location.reload();
+   ```
+
+   Once the page has reloaded:
+
+   ```js
+   await MathJax.startup.promise;
+   await MathJax.typesetPromise();
+   const bubble = document.querySelector('#messages .msg.ai');
+   ({
+     formulas: bubble.querySelectorAll('mjx-container').length,   // must be exactly 3
+     bold: !!bubble.querySelector('strong'),                        // must be true
+     rawDelimitersVisible: /\\\(|\\\[|\$\\frac/.test(bubble.textContent)  // must be false
+   })
+   ```
+
+   Pass only on **exactly 3** formulas, `bold: true`, and `rawDelimitersVisible: false`. Diagnose a failure by the count: **2** means `$` is not enabled in the MathJax config; **0 or 1** means maths is not being shielded from marked. Afterwards, `localStorage.removeItem('meritsChatHistory')` and reload so the seeded reply does not linger. Record the returned object in the report.
 
 Capture a screenshot for the report.
 
