@@ -1520,6 +1520,7 @@ Capture a screenshot for the report.
 - Delete: `chat.html` (its content moves to `index.html`)
 - Modify: `index.html` (replaced by the chat page)
 - Modify: `sw.js` (precache list)
+- Modify: `js/chat.js` (Step 3b: clear the retired game's stored data)
 
 **Interfaces:**
 - Consumes: everything from Task 3.
