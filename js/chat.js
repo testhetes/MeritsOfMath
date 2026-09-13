@@ -67,9 +67,54 @@ window.Chat = (function () {
         return html.replace(/@@MATH(\d+)@@/g, (_, i) => escapeHtml(math[Number(i)]));
     }
 
-    function typeset() {
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            window.MathJax.typesetPromise([els.messages]).catch(() => {});
+    // ---- MathJax typesetting: every formula gets typeset exactly once, ever ----
+    //
+    // Measured on the live site, 2026-09-13, against a seeded reply containing 3 formulas:
+    //   after page load, no manual typeset             formulas 3   nested containers 0
+    //   after 1 typesetPromise([#messages]) call        formulas 6   nested containers 3
+    //   after 2 such calls                               formulas 9   nested containers 6
+    // MathJax.typesetPromise() is not idempotent on content it has already typeset: it does
+    // not skip or replace the existing mjx-container output, it nests a fresh copy of every
+    // formula inside the one already there. The previous version of this file called
+    // typesetPromise([els.messages]) -- the WHOLE conversation -- from both send() and
+    // renderAll(), so every message after the one containing a formula added one more nested
+    // copy of it. The fix has two parts: (1) chat.html sets startup.typeset: false so MathJax
+    // never auto-typesets the page itself, making this file the only thing that ever typesets;
+    // (2) every call here targets only the single element that was just created or rebuilt,
+    // never a container that may already hold rendered formulas -- so nothing is ever handed
+    // to typesetPromise twice. Do not "simplify" this back into one typesetPromise([els.messages])
+    // call after every change; that is the exact bug this fixes.
+
+    // The MathJax script tag is `async`, so window.MathJax can still be just the plain config
+    // object from chat.html (no `.typesetPromise`) when this file's other functions run. Once
+    // the library loads, it augments that same object with `startup.promise`, a promise that
+    // resolves when MathJax's own startup (input/output jax, document setup) is ready --
+    // see https://docs.mathjax.org/en/latest/web/typeset.html. Poll for that property so every
+    // caller below waits on the exact same readiness signal instead of each guessing whether
+    // MathJax has loaded yet.
+    const mathJaxReadyPromise = new Promise((resolve) => {
+        (function poll() {
+            if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+                window.MathJax.startup.promise.then(resolve);
+            } else {
+                setTimeout(poll, 30);
+            }
+        })();
+    });
+
+    // Typeset exactly one element, exactly once. `.then()` callbacks on the same promise run
+    // in the order they were attached, so calls made before MathJax is ready still typeset in
+    // the order they were queued once it becomes ready.
+    function typesetOnce(el) {
+        mathJaxReadyPromise.then(() => window.MathJax.typesetPromise([el])).catch(() => {});
+    }
+
+    // Drop MathJax's bookkeeping for math inside `el` before its DOM nodes are discarded (used
+    // by renderAll, which replaces #messages's innerHTML). If MathJax hasn't loaded yet there is
+    // nothing rendered to clear, so this is a safe no-op in that case.
+    function typesetClear(el) {
+        if (window.MathJax && window.MathJax.typesetClear) {
+            window.MathJax.typesetClear([el]);
         }
     }
 
@@ -77,11 +122,14 @@ window.Chat = (function () {
         els.messages.scrollTop = els.messages.scrollHeight;
     }
 
-    function appendBubble(role, text, extraClass) {
+    // skipTypeset is used only by renderAll, which typesets the whole rebuilt container once
+    // itself after appending every bubble, instead of once per bubble here.
+    function appendBubble(role, text, extraClass, skipTypeset) {
         const div = document.createElement('div');
         div.className = 'msg ' + (extraClass || (role === 'user' ? 'user' : 'ai'));
         div.innerHTML = renderMarkdown(text);
         els.messages.appendChild(div);
+        if (!skipTypeset) typesetOnce(div);
         return div;
     }
 
@@ -103,14 +151,18 @@ window.Chat = (function () {
     }
 
     function renderAll() {
+        // Clear MathJax's bookkeeping for the content about to be discarded, then rebuild and
+        // typeset the container exactly once -- not once per bubble, which is why appendBubble
+        // is told to skip its own typeset here.
+        typesetClear(els.messages);
         els.messages.innerHTML = '';
         if (history.length === 0) {
-            appendBubble('assistant', t('chat.greeting'));
+            appendBubble('assistant', t('chat.greeting'), null, true);
         } else {
-            history.forEach((m) => appendBubble(m.role, m.content));
+            history.forEach((m) => appendBubble(m.role, m.content, null, true));
         }
         renderSuggestions();
-        typeset();
+        typesetOnce(els.messages);
         scrollToBottom();
     }
 
@@ -136,9 +188,8 @@ window.Chat = (function () {
         autoGrow();
 
         history.push({ role: 'user', content: message });
-        appendBubble('user', message);
+        appendBubble('user', message);   // typesets itself; see typesetOnce
         els.suggestions.innerHTML = '';
-        typeset();
         scrollToBottom();
         showTyping();
 
@@ -171,7 +222,7 @@ window.Chat = (function () {
             }
 
             history.push({ role: 'assistant', content: reply });
-            appendBubble('assistant', reply);
+            appendBubble('assistant', reply);   // typesets itself; see typesetOnce
             save();
         } catch {
             hideTyping();
@@ -180,7 +231,6 @@ window.Chat = (function () {
         } finally {
             sending = false;
             els.sendBtn.disabled = false;
-            typeset();
             scrollToBottom();
             els.input.focus();
         }

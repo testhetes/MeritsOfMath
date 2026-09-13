@@ -21,6 +21,17 @@
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
                 processEscapes: true
+            },
+            startup: {
+                // js/chat.js is the only thing that ever typesets (see its comments for why).
+                // If MathJax also auto-typesets the page on load, that is a second pass over
+                // content js/chat.js is about to typeset itself, and MathJax does not skip
+                // content it has already processed -- it nests a fresh copy inside it. Measured
+                // on the live site, 2026-09-13, calling typesetPromise([#messages]) on an
+                // already-rendered 3-formula reply produced 6 mjx-container nodes, and a second
+                // such call produced 9. Disabling MathJax's own pass removes that race, including
+                // on a cached reload served by the service worker.
+                typeset: false
             }
         };
     </script>
