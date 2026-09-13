@@ -76,6 +76,194 @@ Then the live read-only run. Commit each step or tightly related pair separately
 
 ---
 
+### Task 0b: restore Groq as the primary provider with Qwen 3.6 27B
+
+**Added 2026-09-13, after the pre-flight tripped its gate.** Groq shut down `llama-3.3-70b-versatile` for free and developer tiers on **2026-08-16** (announced by email 2026-06-17; see `https://console.groq.com/docs/deprecations`). Since then every `/api/chat` request has returned `model_not_found` from Groq and silently fallen through to Workers AI, so the whole tutor — including the live game app — has been running on Workers AI's 10,000-Neuron daily allowance: roughly 99–154 grounded messages a day. Nothing alerted, because the fallback chain succeeded and no test calls `/api/chat`.
+
+**The user's decision:** switch Groq to `qwen/qwen3.6-27b` on the **free** tier, knowingly accepting that this still falls below the pre-flight gate. Verified free-tier limits are 30 RPM · 1,000 RPD · 8,000 TPM · 200,000 TPD. At ~960–1,320 tokens per grounded message, the per-day token cap allows about **150–210 grounded messages a day on Groq** and the per-minute cap about **2.5–3.5 children at once**, with Workers AI absorbing overflow for a combined ~250–360 a day. This is a deliberate trade for zero cost, not an oversight. Revisit before real classroom use.
+
+**Two traps this task exists to avoid:**
+
+1. **Qwen 3.6 27B reasons by default, inside the reply text.** Its `reasoning_effort` defaults to reasoning enabled and its `reasoning_format` defaults to `raw`, which puts the reasoning inside `<think>` tags in `message.content`. Groq's own example output for this model begins `"content": "<think>Okay, the user is asking...`. Changing only the model id would send children a `200 OK` containing the model's internal monologue — and the fallback chain reacts only to 429, 5xx and network errors, so it would never catch it. The fix is `reasoning_effort: "none"`, which the docs describe as "the model will not use any reasoning tokens". **Do not use `reasoning_format: "hidden"` instead**: it hides the reasoning but still spends reasoning tokens against the ~220-token budget, which is exactly how this project previously got empty replies from GPT-OSS.
+2. **It is labelled "Preview"** on Groq — the class of model that gets retired at short notice, as its predecessor just was. The provider health test below exists so the next retirement fails a test the same day, instead of silently degrading for weeks.
+
+**Files:**
+- Modify: `docs/RAG-OPERATIONS.md` (correct and commit the pre-flight's uncommitted Capacity section)
+- Modify: `functions/api/chat.js`
+- Create: `tests/test_chat_providers.py`
+
+**Interfaces:**
+- Consumes: the existing provider chain in `functions/api/chat.js`.
+- Produces: no contract change. `POST /api/chat` keeps its request and response shape; Groq simply answers again. Task 1 modifies `chat.js` next, so **the eight lines Task 1 uses as find/replace anchors must stay byte-identical**: `const MAX_TOKENS_CAP = 300;`, `let messages = Array.isArray(body.messages) ? body.messages : null;`, `const temperature = typeof body.temperature === 'number' ? body.temperature : 0.1;`, `const maxTokens = Math.min(Number(body.max_tokens) || 150, MAX_TOKENS_CAP);`, `function json(obj, status = 200) {`, `message: { role: 'assistant', content: result.response || '' },`, `const text = await res.text();`, and the string `The tutor is busy right now. Please wait a moment and try again.`
+
+- [ ] **Step 1: Correct the Capacity section, then commit it before anything else**
+
+`docs/RAG-OPERATIONS.md` holds an **uncommitted** `## Capacity` section written by the pre-flight agent before a session ended. It must be committed first: the deploy in Step 6 switches branches, and uncommitted edits to this file would block `git checkout main`.
+
+Keep everything in it that was verified against the source — Workers AI's 10,000 Neurons/day; `@cf/meta/llama-3.3-70b-instruct-fp8-fast` at 26,668 neurons per M input and 204,805 per M output; `@cf/baai/bge-m3` at 1,075 per M input; Vectorize billed as `(queried vectors + stored vectors) × dimensions`, about 29,200 queries a month; and the latency runs. Correct what is now wrong:
+
+- It treats `llama-3.3-70b-versatile` as the working Groq primary. State that it was shut down on 2026-08-16 and cite the deprecations page.
+- Replace the "Groq RPM UNKNOWN" gap with the verified Qwen 3.6 27B free-tier limits above, and redo the concurrency and messages-per-day arithmetic from them. The binding limits are tokens per day and tokens per minute, not requests.
+- Replace its gate verdict with the user's decision: Qwen on Groq free, accepted below the gate, revisit before classroom use.
+- Note the Preview status and the `reasoning_effort: "none"` requirement.
+
+```bash
+git add docs/RAG-OPERATIONS.md
+git commit -m "docs(rag-ops): record free-tier capacity after Groq retired our primary model"
+```
+
+- [ ] **Step 2: Write the failing test**
+
+Create `tests/test_chat_providers.py`:
+
+```python
+"""Per-provider health checks for /api/chat.
+
+The fallback chain hides a dead provider. When Groq retired our model on
+2026-08-16, every request silently fell through to Workers AI and nothing
+alerted for weeks. These tests force each provider individually, so a retired
+model, a leaked reasoning block, or an empty reply fails loudly instead.
+"""
+
+import pytest
+import requests
+
+PROMPT = "Em chào cô. Hai cộng ba bằng mấy ạ? Trả lời thật ngắn."
+
+
+def _force(base_url, provider, max_tokens=60):
+    return requests.post(
+        f"{base_url}/api/chat?provider={provider}",
+        json={"messages": [{"role": "user", "content": PROMPT}], "max_tokens": max_tokens},
+        timeout=90,
+    )
+
+
+def _content(response):
+    return response.json()["choices"][0]["message"]["content"]
+
+
+def test_groq_primary_serves_a_real_reply(base_url):
+    r = _force(base_url, "groq")
+    # A free-tier rate limit is transient and says nothing about model health.
+    if r.status_code == 503 and "groq: 429" in r.headers.get("X-AI-Error", ""):
+        pytest.skip("Groq is rate-limited right now; model health cannot be checked")
+    assert r.status_code == 200, r.headers.get("X-AI-Error", r.text)
+    assert r.headers.get("X-AI-Provider") == "groq", dict(r.headers)
+    content = _content(r)
+    assert content.strip(), "Groq returned empty content (did reasoning consume the token budget?)"
+    assert "<think>" not in content, f"reasoning leaked into the reply: {content!r}"
+
+
+def test_workersai_fallback_serves_a_real_reply(base_url):
+    r = _force(base_url, "workersai")
+    assert r.status_code == 200, r.headers.get("X-AI-Error", r.text)
+    assert r.headers.get("X-AI-Provider") == "workersai", dict(r.headers)
+    assert _content(r).strip(), "Workers AI returned empty content"
+```
+
+OpenRouter is deliberately not tested: its free pool is shared and routinely rate-limited, so a test against it would be flaky.
+
+- [ ] **Step 3: Run it to verify it fails**
+
+```powershell
+$env:INGEST_SECRET = [Environment]::GetEnvironmentVariable('INGEST_SECRET','User')
+$env:RAG_BASE_URL  = "https://meritsofmath.pages.dev"
+python -m pytest tests/test_chat_providers.py -v
+```
+
+Expected: `test_groq_primary_serves_a_real_reply` FAILS with a 503 whose `X-AI-Error` reads `groq: 404 ... model_not_found`. `test_workersai_fallback_serves_a_real_reply` passes.
+
+- [ ] **Step 4: Point Groq at Qwen 3.6 27B**
+
+In `functions/api/chat.js`, in the `groq` entry of `PROVIDERS`, change the default model and replace the stale comment:
+
+```js
+    groq: {
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        available: (env) => !!env.GROQ_API_KEY,
+        key: (env) => env.GROQ_API_KEY,
+        // Groq retired llama-3.3-70b-versatile for free/developer tiers on 2026-08-16.
+        // Qwen 3.6 27B is its recommended replacement. It is a Preview model — the class
+        // Groq retires at short notice — so tests/test_chat_providers.py forces this
+        // provider and fails the day it disappears.
+        model: (env) => env.GROQ_MODEL || 'qwen/qwen3.6-27b'
+    },
+```
+
+- [ ] **Step 5: Switch off Qwen's default reasoning**
+
+Still in `chat.js`, find:
+
+```js
+        const payload = { model: p.model(env), messages, temperature, max_tokens: maxTokens };
+```
+
+and insert immediately after it:
+
+```js
+        // Qwen 3 models reason by default and put that reasoning inside <think> tags in
+        // message.content. A 200 carrying a <think> monologue would reach the student,
+        // and the fallback chain never reacts to a 200. reasoning_effort "none" stops
+        // reasoning tokens entirely. reasoning_format "hidden" is NOT equivalent: it still
+        // spends reasoning tokens against max_tokens, which yields empty replies.
+        if (name === 'groq' && /^qwen\/qwen3/.test(payload.model)) {
+            payload.reasoning_effort = 'none';
+        }
+```
+
+The regex scopes this to Qwen 3 models, so a future `GROQ_MODEL` override to a non-reasoning model is not sent a parameter it may reject.
+
+- [ ] **Step 6: Deploy**
+
+```bash
+git add functions/api/chat.js tests/test_chat_providers.py
+git commit -m "fix(chat): restore Groq primary with Qwen 3.6 27B after llama-3.3 retirement"
+git push origin feat/socratic-chat
+git checkout main
+git pull origin main
+git merge feat/socratic-chat
+git push origin main
+git checkout feat/socratic-chat
+```
+
+If the merge is not a clean fast-forward, STOP and report BLOCKED. Poll `POST /api/chat?provider=groq` every 20 seconds, up to about 5 minutes, until it returns 200.
+
+**If it keeps failing with `model_not_found` after the deploy is live:** read `X-AI-Error`. If it still names `llama-3.3-70b-versatile`, a `GROQ_MODEL` environment variable in Cloudflare Production is overriding the new code default. Report NEEDS_CONTEXT with this exact instruction for the user: Cloudflare → the Pages project → **Settings → Variables and secrets → Production** → delete `GROQ_MODEL` (or set it to `qwen/qwen3.6-27b`) → **Deployments → ⋯ → Retry deployment**. Variables only take effect on a new build.
+
+- [ ] **Step 7: Verify**
+
+```powershell
+python -m pytest tests/test_chat_providers.py -v
+```
+
+Expected: 2 passed. Then run the whole suite in both modes:
+
+```powershell
+Remove-Item Env:INGEST_SECRET,Env:RAG_BASE_URL,Env:RAG_ALLOW_PROD_WRITES -ErrorAction SilentlyContinue
+python -m pytest tests -v
+
+$env:INGEST_SECRET = [Environment]::GetEnvironmentVariable('INGEST_SECRET','User')
+$env:RAG_BASE_URL  = "https://meritsofmath.pages.dev"
+python -m pytest tests -v
+```
+
+Expected: no regressions, and two more live tests than before.
+
+- [ ] **Step 8: Collect sample replies for the report**
+
+Send three short Vietnamese maths questions through `POST /api/chat?provider=groq` and paste the replies verbatim into the report. Judging their teaching quality is the user's job at the checkpoint after Task 2. What this step checks is narrower: that the replies are Vietnamese, non-empty, and free of `<think>` text.
+
+- [ ] **Step 9: Report other references to retired model ids**
+
+```bash
+grep -rn "llama-3.3-70b-versatile\|llama-3.1-8b-instant" --include=*.js --include=*.html --include=*.py . | grep -v node_modules
+```
+
+List every hit in the report. **Do not modify `js/*.js` or `debug.html`** — Task 4 deletes them along with the game.
+
+---
+
 ## Pre-flight: verify free-tier headroom
 
 **Do this before Task 1.** Every student message will cost one embedding call plus one vector query on top of the AI call. Nobody has checked those ceilings, and discovering them by having the tutor die in front of a classroom is the worst way to find out. This is measurement and arithmetic, not code — no commit required beyond the runbook update.
