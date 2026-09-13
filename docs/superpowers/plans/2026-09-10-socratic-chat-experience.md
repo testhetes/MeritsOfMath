@@ -1194,6 +1194,8 @@ Create `chat.html`:
 </html>
 ```
 
+> **Superseded — typesetting.** The typesetting in the `js/chat.js` code below, and the `window.MathJax` config in Step 3, are this plan's **original** design, and they are **defective**. `renderAll()` and `send()` re-run `MathJax.typesetPromise([els.messages])` on the whole conversation, and re-typesetting maths that is already rendered nests a new copy inside every formula — measured on the live site on 2026-09-14 as 3 → 6 → 9 formulas across successive messages. Fix round 1 replaced this in commit `0251985`: MathJax's automatic startup typeset is disabled with `startup: { typeset: false }`, and `js/chat.js` typesets each element exactly once. **The committed `chat.html` and `js/chat.js` are authoritative for typesetting.** Where the code below differs from those committed files in any other respect, the committed files win as well.
+
 - [ ] **Step 4: Create the chat module**
 
 Create `js/chat.js`:
@@ -1486,7 +1488,10 @@ Then open `https://meritsofmath.pages.dev/chat.html` in the Browser pane and ver
 
    ```js
    await MathJax.startup.promise;
-   await MathJax.typesetPromise();
+   // Do NOT call MathJax.typesetPromise() here. Re-typesetting already-rendered maths nests a
+   // new copy inside each formula (measured 2026-09-14: 3 -> 6 -> 9). This check must measure
+   // what the APP rendered, so it only waits and counts.
+   await new Promise(r => setTimeout(r, 3000));
    const bubble = document.querySelector('#messages .msg.ai');
    ({
      formulas: bubble.querySelectorAll('mjx-container').length,   // must be exactly 3
@@ -1495,7 +1500,9 @@ Then open `https://meritsofmath.pages.dev/chat.html` in the Browser pane and ver
    })
    ```
 
-   Pass only on **exactly 3** formulas, `bold: true`, and `rawDelimitersVisible: false`. Diagnose a failure by the count: **2** means `$` is not enabled in the MathJax config; **0 or 1** means maths is not being shielded from marked. Afterwards, `localStorage.removeItem('meritsChatHistory')` and reload so the seeded reply does not linger. Record the returned object in the report.
+   Pass only on **exactly 3** formulas, `bold: true`, and `rawDelimitersVisible: false`. Diagnose a failure by the count: **2** means `$` is not enabled in the MathJax config; **0 or 1** means maths is not being shielded from marked; **6, 9 or more** — or any `mjx-container` nested inside another (`bubble.querySelectorAll('mjx-container mjx-container').length > 0`) — means something re-typesets maths that is already rendered.
+
+   Then run the check that catches that last failure, which a page load alone never exercises: type a message into the composer, send it, wait for the tutor's reply, and recount the **seeded** bubble. It must still show exactly 3 formulas and 0 nested containers. The first version of `js/chat.js` re-typeset the whole conversation after every message, which duplicated every earlier formula (measured 2026-09-14: 3 → 6 → 9). Checks 1–7 all passed without catching it, because none of them sends a second message after a reply containing maths. Afterwards, `localStorage.removeItem('meritsChatHistory')` and reload so the seeded reply does not linger. Record the returned object in the report.
 
 Capture a screenshot for the report.
 
