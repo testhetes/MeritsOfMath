@@ -35,7 +35,11 @@ const PROVIDERS = {
         url: 'https://api.groq.com/openai/v1/chat/completions',
         available: (env) => !!env.GROQ_API_KEY,
         key: (env) => env.GROQ_API_KEY,
-        model: (env) => env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+        // Groq retired llama-3.3-70b-versatile for free/developer tiers on 2026-08-16.
+        // Qwen 3.6 27B is its recommended replacement. It is a Preview model — the class
+        // Groq retires at short notice — so tests/test_chat_providers.py forces this
+        // provider and fails the day it disappears.
+        model: (env) => env.GROQ_MODEL || 'qwen/qwen3.6-27b'
     },
     openrouter: {
         url: 'https://openrouter.ai/api/v1/chat/completions',
@@ -156,6 +160,14 @@ export async function onRequestPost({ request, env }) {
         }
 
         const payload = { model: p.model(env), messages, temperature, max_tokens: maxTokens };
+        // Qwen 3 models reason by default and put that reasoning inside <think> tags in
+        // message.content. A 200 carrying a <think> monologue would reach the student,
+        // and the fallback chain never reacts to a 200. reasoning_effort "none" stops
+        // reasoning tokens entirely. reasoning_format "hidden" is NOT equivalent: it still
+        // spends reasoning tokens against max_tokens, which yields empty replies.
+        if (name === 'groq' && /^qwen\/qwen3/.test(payload.model)) {
+            payload.reasoning_effort = 'none';
+        }
         const headers = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${p.key(env)}`
