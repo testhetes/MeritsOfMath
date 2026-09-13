@@ -51,14 +51,28 @@ def test_rag_error_header_is_a_fixed_code(base_url):
     assert err is None or err in {"no_binding", "timeout", "retrieval_failed"}, err
 
 
-def test_offtopic_query_retrieves_nothing(base_url):
+def test_offtopic_message_still_gets_a_reply(base_url):
+    """An off-topic message must still get a normal reply and never crash chat.
+
+    This deliberately does NOT assert that nothing is retrieved. On this index every
+    query retrieves topK chunks at MIN_SCORE 0.30 — measured 2026-09-13, the top-5
+    scores for 'zzzqqq wubbalubba flimflam' were 0.372-0.328 and for 'dạ' 0.389-0.371 —
+    and no floor separates relevant from irrelevant input without also rejecting
+    children who type without diacritics. Retrieval noise is therefore expected here.
+    Keeping it out of the conversation is the system prompt's job, and that is checked
+    behaviourally, as a pass rate, in Plan 2 Task 2's tutor behaviour eval.
+    """
     r = _chat(base_url, {
         "messages": [{"role": "user", "content": "zzzqqq wubbalubba flimflam"}],
         "ground": True,
         "lang": "vi",
     })
     assert r.status_code == 200, r.text
-    assert int(r.headers.get("X-RAG-Chunks", "0")) == 0, r.headers
+    assert "X-RAG-Chunks" in r.headers, dict(r.headers)
+    assert r.headers.get("X-RAG-Error") in (None, "no_binding", "timeout", "retrieval_failed"), dict(r.headers)
+    content = r.json()["choices"][0]["message"]["content"]
+    assert content.strip(), "off-topic grounded request returned empty content"
+    assert "<think>" not in content, f"reasoning leaked into the reply: {content!r}"
 
 
 def test_ungrounded_request_is_unchanged(base_url):
