@@ -37,6 +37,10 @@
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <!-- marked does not sanitise its output; DOMPurify cleans it before chat.js ever touches
+         innerHTML (see js/chat.js). Pinned to an exact version so a CDN update can't change
+         sanitising behaviour under us. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.15/purify.min.js"></script>
     <link rel="stylesheet" href="chat.css">
 </head>
 <body>

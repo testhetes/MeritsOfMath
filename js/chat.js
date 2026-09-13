@@ -43,9 +43,42 @@ window.Chat = (function () {
     const MATH_SPAN = /\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$\n]+?\$/g;
 
     function escapeHtml(s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // marked does not sanitise: it treats any `<` in its input as the start of raw HTML and
+    // passes that HTML straight through unchanged. Left alone, that means two problems at once:
+    // `a<b` is parsed as an (unknown) tag and vanishes from the rendered text, and something
+    // like `<img src=x onerror=...>` -- which the child can steer, since it comes from the
+    // tutor's reply as well as the child's own message, and both are replayed from
+    // localStorage on every future visit -- would run unchanged. So `&` and `<` are escaped
+    // BEFORE marked ever sees the text; none of the markdown marked is asked to render here
+    // (bold, italics, lists, > blockquotes, headings) needs a literal `&` or `<` character, so
+    // this does not break legitimate formatting. `>` is left alone: escaping it is not needed
+    // for safety (a lone `>` cannot open a tag) and would break `> blockquote` syntax.
+    // marked's output is then sanitised again below with an allowlist, since escaping `<` on
+    // the way in stops HTML from appearing in the source text but says nothing about what
+    // marked itself might emit (e.g. an `<a href="javascript:...">` from a markdown link).
+    function escapeAmpLt(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    }
+
+    // Explicit allowlist for DOMPurify: only the tags/attributes marked's own Markdown syntax
+    // can produce. MathJax typesets AFTER this sanitised HTML is inserted and builds its own
+    // <mjx-container> elements directly in the DOM, not through this HTML string, so the
+    // allowlist does not need to (and must not) include MathJax's tags.
+    const SANITISE = {
+        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'del', 'code', 'pre', 'blockquote',
+                       'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'a',
+                       'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span'],
+        ALLOWED_ATTR: ['href', 'title'],
+        ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i
+    };
+
+    // Renders one message's markdown+maths to an HTML string. Does NOT sanitise -- every
+    // caller must pass the result through DOMPurify (see appendBubble) before it reaches
+    // innerHTML. Kept as a separate step so the fail-safe in appendBubble (skip straight to
+    // textContent when DOMPurify itself is unavailable) has one obvious place to live.
     function renderMarkdown(text) {
         const math = [];
         const shielded = text.replace(MATH_SPAN, (span) => {
@@ -53,12 +86,14 @@ window.Chat = (function () {
             return '@@MATH' + (math.length - 1) + '@@';
         });
 
+        const escaped = escapeAmpLt(shielded);
+
         let html;
         if (window.marked && window.marked.parse) {
-            html = window.marked.parse(shielded, { breaks: true });
+            html = window.marked.parse(escaped, { breaks: true });
         } else {
             const div = document.createElement('div');
-            div.textContent = shielded;
+            div.textContent = escaped;
             html = div.innerHTML;
         }
 
@@ -67,7 +102,7 @@ window.Chat = (function () {
         return html.replace(/@@MATH(\d+)@@/g, (_, i) => escapeHtml(math[Number(i)]));
     }
 
-    // ---- MathJax typesetting: every formula gets typeset exactly once, ever ----
+    // ---- MathJax typesetting: serialised so no element can ever be typeset twice ----
     //
     // Measured on the live site, 2026-09-13, against a seeded reply containing 3 formulas:
     //   after page load, no manual typeset             formulas 3   nested containers 0
@@ -75,15 +110,23 @@ window.Chat = (function () {
     //   after 2 such calls                               formulas 9   nested containers 6
     // MathJax.typesetPromise() is not idempotent on content it has already typeset: it does
     // not skip or replace the existing mjx-container output, it nests a fresh copy of every
-    // formula inside the one already there. The previous version of this file called
-    // typesetPromise([els.messages]) -- the WHOLE conversation -- from both send() and
-    // renderAll(), so every message after the one containing a formula added one more nested
-    // copy of it. The fix has two parts: (1) chat.html sets startup.typeset: false so MathJax
-    // never auto-typesets the page itself, making this file the only thing that ever typesets;
-    // (2) every call here targets only the single element that was just created or rebuilt,
-    // never a container that may already hold rendered formulas -- so nothing is ever handed
-    // to typesetPromise twice. Do not "simplify" this back into one typesetPromise([els.messages])
-    // call after every change; that is the exact bug this fixes.
+    // formula inside the one already there. An earlier version of this file called
+    // typesetPromise on the WHOLE conversation container from renderAll() as well as
+    // typesetting each new bubble individually, so a bubble added before MathJax finished
+    // loading got queued once for itself and once again when the container-wide pass ran --
+    // typesetting it twice back to back. That is fixed here by construction, not by care at
+    // each call site: every element is typeset through the SAME function, `renderAll` typesets
+    // its rebuilt bubbles exactly the way every other path does (via appendBubble, below) and
+    // never separately typesets the container, and two independent guarantees make a duplicate
+    // pass over any one element impossible regardless of call order or timing:
+    //   1. every typeset runs off ONE promise chain (typesetQueue), so calls never run
+    //      concurrently -- MathJax v3 warns against overlapping typesetPromise calls, since a
+    //      retry (e.g. while autoloading a TeX extension) can otherwise interleave with another
+    //      in-flight call -- and a call queued before MathJax is ready simply waits its turn
+    //      once mathJaxReadyPromise resolves;
+    //   2. a WeakSet records every element that has ever been queued, so even the same element
+    //      passed to typesetOnce a second time (by a future bug, not by anything below today)
+    //      is a no-op instead of a second pass over the same formulas.
 
     // The MathJax script tag is `async`, so window.MathJax can still be just the plain config
     // object from chat.html (no `.typesetPromise`) when this file's other functions run. Once
@@ -91,7 +134,8 @@ window.Chat = (function () {
     // resolves when MathJax's own startup (input/output jax, document setup) is ready --
     // see https://docs.mathjax.org/en/latest/web/typeset.html. Poll for that property so every
     // caller below waits on the exact same readiness signal instead of each guessing whether
-    // MathJax has loaded yet.
+    // MathJax has loaded yet. (This poll is unbounded if the MathJax script never loads at all,
+    // e.g. the CDN is unreachable -- a separately recorded minor issue, not changed here.)
     const mathJaxReadyPromise = new Promise((resolve) => {
         (function poll() {
             if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
@@ -102,11 +146,24 @@ window.Chat = (function () {
         })();
     });
 
-    // Typeset exactly one element, exactly once. `.then()` callbacks on the same promise run
-    // in the order they were attached, so calls made before MathJax is ready still typeset in
-    // the order they were queued once it becomes ready.
+    // Elements already typeset, or already queued to be. Belt-and-braces alongside the
+    // serialised queue below: two independent reasons the same element can never be
+    // typeset twice.
+    const typesetSeen = new WeakSet();
+
+    // Every typeset chains off this single promise, so calls run strictly one after another,
+    // in the order typesetOnce was called, starting only once MathJax itself is ready.
+    let typesetQueue = mathJaxReadyPromise;
+
+    // Typeset one element, at most once, once MathJax is ready and every typeset queued before
+    // it has finished. Skips elements no longer on the page (e.g. a bubble cleared by
+    // renderAll before its queued turn arrived).
     function typesetOnce(el) {
-        mathJaxReadyPromise.then(() => window.MathJax.typesetPromise([el])).catch(() => {});
+        if (typesetSeen.has(el)) return;
+        typesetSeen.add(el);
+        typesetQueue = typesetQueue
+            .then(() => el.isConnected && window.MathJax.typesetPromise([el]))
+            .catch(() => {});
     }
 
     // Drop MathJax's bookkeeping for math inside `el` before its DOM nodes are discarded (used
@@ -122,14 +179,23 @@ window.Chat = (function () {
         els.messages.scrollTop = els.messages.scrollHeight;
     }
 
-    // skipTypeset is used only by renderAll, which typesets the whole rebuilt container once
-    // itself after appending every bubble, instead of once per bubble here.
-    function appendBubble(role, text, extraClass, skipTypeset) {
+    function appendBubble(role, text, extraClass) {
         const div = document.createElement('div');
         div.className = 'msg ' + (extraClass || (role === 'user' ? 'user' : 'ai'));
-        div.innerHTML = renderMarkdown(text);
+        // DOMPurify sanitises marked's output against an explicit allowlist before it ever
+        // reaches innerHTML -- marked itself does not sanitise, and both the child's own
+        // message and the tutor's reply (which the child can steer) are saved to localStorage
+        // and replayed on every future visit, so unsanitised HTML here would run again and
+        // again. If DOMPurify itself is unavailable (its CDN script blocked or failed to load),
+        // fail safe: render as plain text via textContent rather than ever falling back to
+        // unsanitised innerHTML.
+        if (window.DOMPurify && window.DOMPurify.sanitize) {
+            div.innerHTML = window.DOMPurify.sanitize(renderMarkdown(text), SANITISE);
+        } else {
+            div.textContent = text;
+        }
         els.messages.appendChild(div);
-        if (!skipTypeset) typesetOnce(div);
+        typesetOnce(div);
         return div;
     }
 
@@ -151,18 +217,18 @@ window.Chat = (function () {
     }
 
     function renderAll() {
-        // Clear MathJax's bookkeeping for the content about to be discarded, then rebuild and
-        // typeset the container exactly once -- not once per bubble, which is why appendBubble
-        // is told to skip its own typeset here.
+        // Clear MathJax's bookkeeping for the content about to be discarded, then rebuild.
+        // Each bubble typesets itself through appendBubble, the same as every other path --
+        // there is no separate container-wide typeset here (see the comment above typesetOnce
+        // for why that used to duplicate formulas).
         typesetClear(els.messages);
         els.messages.innerHTML = '';
         if (history.length === 0) {
-            appendBubble('assistant', t('chat.greeting'), null, true);
+            appendBubble('assistant', t('chat.greeting'));
         } else {
-            history.forEach((m) => appendBubble(m.role, m.content, null, true));
+            history.forEach((m) => appendBubble(m.role, m.content));
         }
         renderSuggestions();
-        typesetOnce(els.messages);
         scrollToBottom();
     }
 
