@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Merits of Math</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1a1b2e">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // MathJax 3 recognises only \( \) for inline maths by default. Measured on the live
+        // site, 2026-09-13: `$\frac{1}{2}$` rendered 0 formulas. The tutor model emitted both
+        // $...$ and \(...\) in consecutive replies, so both must be enabled. This config must
+        // exist BEFORE tex-mml-chtml.js loads, or MathJax starts with its defaults.
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+    <header class="chat-header">
+        <div>
+            <h1 data-i18n="chat.title">Merits of Math</h1>
+            <p class="sub" data-i18n="chat.subtitle">Gia sư toán của em</p>
+        </div>
+        <div class="spacer"></div>
+        <div class="lang-toggle">
+            <button type="button" data-lang-btn="vi">VI</button>
+            <button type="button" data-lang-btn="en">EN</button>
+        </div>
+        <button type="button" class="icon-btn" id="clear-btn" title="New conversation">&#8635;</button>
+    </header>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="suggestions" id="suggestions"></div>
+
+    <form class="composer" id="composer">
+        <textarea id="input" rows="1" data-i18n-ph="chat.placeholder" placeholder="Hỏi em về toán..."></textarea>
+        <button type="submit" id="send-btn" data-i18n="chat.send">Gửi</button>
+    </form>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/chat.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+        }
+    </script>
+</body>
+</html>

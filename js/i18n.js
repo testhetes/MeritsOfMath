@@ -144,7 +144,20 @@ window.I18n = (function () {
         // ---- Misc / toasts ----
         'toast.levelUp': { en: 'Level Up! You are now Lvl {n}', vi: 'Lên cấp! Bạn hiện ở Cấp {n}' },
         'aiTutor.busy': { en: '⚠️ The tutor is busy right now. Please wait a moment and try again.', vi: '⚠️ Gia sư đang bận. Vui lòng chờ một lát rồi thử lại.' },
-        'aiTutor.notSetup': { en: "⚠️ The AI tutor isn't set up yet. Please configure it in Settings.", vi: '⚠️ Gia sư AI chưa được thiết lập. Vui lòng cấu hình trong Cài đặt.' }
+        'aiTutor.notSetup': { en: "⚠️ The AI tutor isn't set up yet. Please configure it in Settings.", vi: '⚠️ Gia sư AI chưa được thiết lập. Vui lòng cấu hình trong Cài đặt.' },
+
+        // ---- Chat ----
+        'chat.title': { en: 'Merits of Math', vi: 'Merits of Math' },
+        'chat.subtitle': { en: 'Your maths tutor', vi: 'Gia sư toán của em' },
+        'chat.placeholder': { en: 'Ask me about maths...', vi: 'Hỏi em về toán...' },
+        'chat.send': { en: 'Send', vi: 'Gửi' },
+        'chat.greeting': { en: "Hello! I'm here to help you think through maths problems. What are you working on?", vi: 'Chào em! Cô ở đây để giúp em tự tìm ra lời giải. Hôm nay em đang học bài gì?' },
+        'chat.suggest1': { en: 'I don\'t understand carrying', vi: 'Em không hiểu phép cộng có nhớ' },
+        'chat.suggest2': { en: 'What is a fraction?', vi: 'Phân số là gì ạ?' },
+        'chat.suggest3': { en: 'Help me with times tables', vi: 'Giúp em học bảng nhân' },
+        'chat.thinking': { en: 'Thinking...', vi: 'Đang suy nghĩ...' },
+        'chat.error': { en: 'The tutor is busy. Please try again in a moment.', vi: 'Gia sư đang bận. Em thử lại sau giây lát nhé.' },
+        'chat.clear': { en: 'New conversation', vi: 'Cuộc trò chuyện mới' },
     };
 
     let lang = localStorage.getItem('meritsLang') || 'vi';
