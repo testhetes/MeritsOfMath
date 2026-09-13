@@ -1582,11 +1582,15 @@ Change it to `'merits-v5'`. This one matters more than usual: the file's own com
 
 - [ ] **Step 4: Verify nothing still references a deleted file**
 
+Match the retired files by their **paths**, and search tracked files only:
+
 ```bash
-grep -rn "app\.js\|db\.js\|aiTutor\|uiHelpers\|battleSystem\|progression\.js\|dashboard\.js\|style\.css\|rag\.js" --include=*.html --include=*.js --include=*.json . | grep -v node_modules | grep -v "^./docs/" | grep -v "^./.superpowers/"
+git grep -n -E 'js/(app|db|rag|battleSystem|progression|dashboard|aiTutor|uiHelpers)\.js|style\.css|debug\.html' -- . ':!docs' ':!.superpowers'
 ```
 
-Expected: no output. Any hit is a dangling reference — fix it before continuing.
+Expected: **exactly two hits, both stale text rather than code** — `DEPLOY.md:3`, which describes the site as `index.html` + `js/` + `style.css`, and a comment at `functions/api/chat.js:4` naming `js/aiTutor.js`. Update the wording of both so they describe the chat app. Any *other* hit is a real dangling reference — fix it before continuing.
+
+**Never modify the `import ... from './_rag.js'` lines in `functions/api/`.** They are live backend imports, unrelated to the retired `js/rag.js`. An earlier version of this step used the pattern `rag\.js`, which also matches `_rag.js`, and said to fix every hit. Measured on 2026-09-13, that would have flagged all four working endpoint imports for "fixing".
 
 - [ ] **Step 5: Confirm the Python suite is unaffected**
 
