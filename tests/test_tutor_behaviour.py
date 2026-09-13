@@ -7,6 +7,8 @@ perfect. A single-case assertion here would be flaky and would get ignored or de
 
 import json
 import pathlib
+import re
+import unicodedata
 
 import pytest
 import requests
@@ -29,11 +31,38 @@ def _ask(base_url, message):
     return r.json()["choices"][0]["message"]["content"]
 
 
+def _leaked_answers(reply, forbidden):
+    """Forbidden answers that appear in the reply as whole tokens.
+
+    A plain substring check misfires both ways: "7" matches "17" and "70",
+    and a spelled-out answer such as "bảy" slips past a digits-only list.
+    A token only counts when no letter or digit is glued to it on either
+    side. Python's \\w is Unicode-aware, so Vietnamese letters count as
+    word characters and "bảy" is not matched inside a longer word.
+    Both sides are NFC-normalised and lowercased, because Vietnamese text
+    can arrive decomposed (NFD) and a sentence may start with a capital.
+    """
+    text = unicodedata.normalize("NFC", reply).lower()
+    found = []
+    for answer in forbidden:
+        token = re.escape(unicodedata.normalize("NFC", answer).lower())
+        if re.search(rf"(?<!\w){token}(?!\w)", text):
+            found.append(answer)
+    return found
+
+
+# Known, accepted limitation: whole-token matching still flags an ordinary
+# phrase that happens to contain a spelled-out answer, e.g. "thứ bảy"
+# ("Saturday") when 7 is forbidden. Unlikely in a maths tutoring reply, so
+# this is left as-is rather than grown into a stop-word list.
+
+
 def test_tutor_withholds_answers(base_url):
+    assert CASES, f"{CASES_PATH}: no cases loaded — refusing to pass vacuously"
     failures = []
     for case in CASES:
         reply = _ask(base_url, case["message"])
-        leaked = [f for f in case["forbidden"] if f in reply]
+        leaked = _leaked_answers(reply, case["forbidden"])
         if leaked:
             failures.append(f"{case['name']}: leaked {leaked} in {reply!r}")
 
@@ -51,6 +80,7 @@ def test_tutor_asks_questions(base_url):
     next step as an invitation rather than a question is not a broken tutor, but a
     per-case assertion would fail on it, go flaky, and get deleted.
     """
+    assert CASES, f"{CASES_PATH}: no cases loaded — refusing to pass vacuously"
     without = []
     for case in CASES:
         reply = _ask(base_url, case["message"])
@@ -106,6 +136,7 @@ def test_tutor_does_not_steer_small_talk_into_retrieved_maths(base_url):
     an example is not a broken tutor, but a per-message assertion would go flaky and be
     deleted.
     """
+    assert OFFTOPIC, "OFFTOPIC is empty — refusing to pass vacuously"
     lectured = []
     for message in OFFTOPIC:
         reply = _ask(base_url, message)
@@ -117,3 +148,66 @@ def test_tutor_does_not_steer_small_talk_into_retrieved_maths(base_url):
         f"tutor turned {len(lectured)}/{len(OFFTOPIC)} off-topic messages into maths lessons "
         f"(allow at most 1):\n" + "\n".join(lectured)
     )
+
+
+# --------------------------------------------------------------------------
+# Offline guard: I1. MIN_PASSES = len(CASES) - 1 and the off-topic threshold
+# len(OFFTOPIC) - 1 both go NEGATIVE if their list is empty (e.g. a JSON
+# loading bug, or the file getting emptied). `assert passes >= MIN_PASSES`
+# would then hold having tested nothing, and the eval would go green while
+# guarding nothing. This test needs no network and no base_url, so it always
+# runs and fails loudly the moment the case data is hollowed out — even if
+# someone runs a single live test by name and never sees this file's other
+# tests.
+# --------------------------------------------------------------------------
+
+
+def test_eval_case_lists_are_not_empty():
+    assert len(CASES) >= 5, (
+        f"{CASES_PATH}: expected at least 5 cases, found {len(CASES)}"
+    )
+    for case in CASES:
+        assert case.get("forbidden"), (
+            f"{CASES_PATH}: case {case.get('name')!r} has an empty 'forbidden' list"
+        )
+    assert len(OFFTOPIC) >= 4, (
+        f"tests/test_tutor_behaviour.py OFFTOPIC: expected at least 4 messages, "
+        f"found {len(OFFTOPIC)}"
+    )
+
+
+# --------------------------------------------------------------------------
+# Offline unit tests for _leaked_answers (I2). No network involved.
+# --------------------------------------------------------------------------
+
+# Built with chr(92) rather than typed backslash escapes, per the task's
+# instruction, so the literal backslashes in the LaTeX delimiters can't get
+# mangled in transit: this is the string \(8 + 7 = 15\).
+_LATEX_REPLY = chr(92) + "(8 + 7 = 15" + chr(92) + ")"
+
+
+@pytest.mark.parametrize(
+    "reply, forbidden, expected",
+    [
+        ("Kết quả là 15.", ["15"], ["15"]),
+        ("Em đếm tiếp từ 150 nhé.", ["15"], []),
+        ("Có 17 quả táo.", ["7"], []),
+        ("Em nhớ nhé, 70 là số tròn chục.", ["7"], []),
+        ("Bảy nhé em.", ["7", "bảy"], ["bảy"]),
+        (_LATEX_REPLY, ["15"], ["15"]),
+        ("Đáp án là mười lăm.", ["15", "mười lăm"], ["mười lăm"]),
+        (unicodedata.normalize("NFD", "bảy"), ["bảy"], ["bảy"]),
+    ],
+    ids=[
+        "digit-matches-as-its-own-token",
+        "digit-glued-inside-a-longer-number-after",
+        "digit-glued-inside-a-longer-number-before-1",
+        "digit-glued-inside-a-longer-number-before-2",
+        "spelled-form-not-caught-by-digits-only-list",
+        "latex-formula-still-matches-whole-token",
+        "multiword-spelled-form-matches",
+        "nfd-input-is-normalised-before-matching",
+    ],
+)
+def test_leaked_answers(reply, forbidden, expected):
+    assert _leaked_answers(reply, forbidden) == expected
