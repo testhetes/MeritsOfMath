@@ -1519,8 +1519,9 @@ Capture a screenshot for the report.
 - Delete: `js/app.js`, `js/db.js`, `js/rag.js`, `js/battleSystem.js`, `js/progression.js`, `js/dashboard.js`, `js/aiTutor.js`, `js/uiHelpers.js`, `style.css`, `debug.html`
 - Delete: `chat.html` (its content moves to `index.html`)
 - Modify: `index.html` (replaced by the chat page)
-- Modify: `sw.js` (precache list)
-- Modify: `js/chat.js` (Step 3b: clear the retired game's stored data)
+- Modify: `sw.js` (Step 3: replaced — network-first app shell, verified-only CDN caching, `merits-v5`)
+- Modify: `js/chat.js` (Step 3b: clear the retired game's stored data; Step 4: comments that name `chat.html`)
+- Modify, wording only (Step 4): `DEPLOY.md`, the comment at `functions/api/chat.js:4`, and any comment in `index.html` or `chat.css` that still names `chat.html`
 
 **Interfaces:**
 - Consumes: everything from Task 3.
@@ -1534,22 +1535,25 @@ Record both escape routes in your report **before** making any change, so neithe
 
 **Fastest rollback (no git, ~30 seconds):** Cloudflare dashboard → the Pages project → **Deployments** → find the last known-good deployment → **⋯** → **Rollback to this deployment**. Note the deployment hash of the current good one now, so you know which row to pick.
 
-**Git rollback:** capture the current `main` commit before the merge:
+**Git rollback:** capture the current `main` commit before deploying:
 
 ```bash
 git rev-parse main    # record this value in the report BEFORE Step 1
 ```
 
-To undo after deploying:
+Step 6 deploys by fast-forwarding `main`, so there is no merge commit to revert. To undo after deploying, revert this task's own commit. Never run `git checkout main` with uncommitted changes in the working tree.
 
 ```bash
 git checkout main
-git revert --no-edit <the merge commit this task pushes>
+git revert --no-edit <the commit this task pushed>
 git push origin main
-git checkout feat/socratic-rag-tutor
+git checkout feat/socratic-chat
+git merge --ff-only main
 ```
 
 A revert is preferred over a force-push: it leaves history intact and triggers a normal deploy.
+
+A dashboard rollback only changes what Cloudflare serves; `main` still holds the task's commit. If you roll back in the dashboard, still make the git revert before anything else is pushed. Otherwise the next deploy from `main` ships the broken state again.
 
 - [ ] **Step 1: Replace index.html**
 
@@ -1567,31 +1571,119 @@ git rm js/app.js js/db.js js/rag.js js/battleSystem.js js/progression.js js/dash
 
 `debug.html` goes too: it was a diagnostic page for the old tutor's provider chain and references `js/aiTutor.js`.
 
-- [ ] **Step 3: Update the service worker precache**
+- [ ] **Step 3: Replace the service worker**
 
-Open `sw.js`. The array is called `APP_SHELL` and uses `./`-relative paths — keep that style. Replace its entries with exactly:
+Replace the whole of `sw.js` with the file below. Besides the new file list, two behaviours change:
+
+- **Same-origin files become network-first.** The old worker served the cached copy first (stale-while-revalidate), so the first load after every deploy ran the old code. After Task 3's safety fixes, that meant a returning device ran the old, unsafe renderer against its stored conversation once. Network-first gives the next load the deployed code, and the cache still serves the shell offline. There is deliberately no timeout: one would pair a fresh page with stale scripts on a slow connection, and the chat needs the network for every message anyway.
+- **CDN responses are cached only when verified.** The old worker also cached opaque cross-origin responses, whose status cannot be read, so a failed download could be kept forever and break MathJax, marked or DOMPurify on that device. The new worker fetches each CDN file itself in CORS mode and caches only a successful response. Every CDN this app uses sends `Access-Control-Allow-Origin: *`. This was checked on 2026-09-14 for jsDelivr (MathJax 3.2.2, marked 18.0.13), cdnjs (DOMPurify 3.4.15) and Google Fonts.
+
+The cache name moves to `merits-v5`. This deploy deletes files the old worker precached, so the old cache must be purged; the activate handler deletes every cache that is not `merits-v5`.
+
+`./index.html` is not precached. Cloudflare Pages answers `/index.html` with a 308 redirect to `/` (checked 2026-09-14), and `./` already covers the page.
 
 ```js
+// Service worker for Merits of Math.
+//
+// Strategy:
+//   - Same-origin app files (html/css/js/icons): NETWORK-FIRST, falling back to the cache only
+//     when the network fails, so a deploy reaches a returning visitor on their next load. A
+//     cache-first strategy would run the OLD code on the first load after every deploy, which
+//     after a safety fix means the old renderer replaying a stored conversation. There is
+//     deliberately no timeout: one would pair a fresh page with stale scripts on a slow
+//     connection, and the chat needs the network for every message anyway.
+//   - Cross-origin CDN libraries (all pinned to exact, immutable versions): CACHE-FIRST. The
+//     worker fetches each one itself in CORS mode and caches it only if the response is a
+//     verified success. Opaque responses are never cached: their status cannot be read, so a
+//     failed download could otherwise be kept forever.
+//   - The AI proxy (/api/) is never intercepted; those calls always hit the network.
+//
+// Bump CACHE only to purge everything, for example when files are deleted.
+
+const CACHE = 'merits-v5';
+
+// './index.html' is deliberately absent: Cloudflare Pages answers /index.html with a 308
+// redirect to /, and './' already covers the page.
 const APP_SHELL = [
     './',
-    './index.html',
     './chat.css',
     './manifest.webmanifest',
     './icons/icon.svg',
     './js/i18n.js',
     './js/chat.js'
 ];
+
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE)
+            // {cache:'reload'} so install always pulls fresh from the network, never the browser's
+            // HTTP cache. allSettled so one bad asset can't block install.
+            .then((cache) => Promise.allSettled(APP_SHELL.map((url) => cache.add(new Request(url, { cache: 'reload' })))))
+            .then(() => self.skipWaiting())
+    );
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys()
+            .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+            .then(() => self.clients.claim())
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    const req = event.request;
+
+    // Only handle GET. POSTs (the tutor calls) always hit the network.
+    if (req.method !== 'GET') return;
+
+    const url = new URL(req.url);
+
+    if (url.origin === self.location.origin) {
+        // Never intercept the AI proxy: its responses must stay live.
+        if (url.pathname.startsWith('/api/')) return;
+        event.respondWith(networkFirst(req));
+    } else {
+        event.respondWith(cacheFirstVerified(req));
+    }
+});
+
+// Network when reachable (refreshing the cache on success), cache only when it is not.
+function networkFirst(req) {
+    return fetch(req)
+        .then((res) => {
+            if (res && res.ok) {
+                const copy = res.clone();
+                caches.open(CACHE).then((cache) => cache.put(req, copy));
+            }
+            return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || Response.error()));
+}
+
+// Cached copy if there is one. Otherwise fetch in CORS mode and cache only a readable success.
+// A CORS response may answer the page's own no-cors <script> request. If the CORS fetch
+// fails or is not ok, the page's request is passed through unchanged and nothing is cached.
+function cacheFirstVerified(req) {
+    return caches.match(req.url).then((cached) => {
+        if (cached) return cached;
+        return fetch(req.url, { mode: 'cors', credentials: 'omit' })
+            .then((res) => {
+                if (!res.ok) return fetch(req);
+                const copy = res.clone();
+                caches.open(CACHE).then((cache) => cache.put(req.url, copy));
+                return res;
+            })
+            .catch(() => fetch(req));
+    });
+}
 ```
 
-Leave any cross-origin CDN entries in that file alone, except: MathLive and mathjs are no longer loaded by the app (see the note under Task 3), so remove their CDN URLs if they are listed.
+One stale load per returning visitor is expected at this transition, and acceptable: the old worker still handles the first navigation after the deploy, and the new one takes over as soon as it activates.
 
-Then bump the cache version. The constant is:
-
-```js
-const CACHE = 'merits-v4';
-```
-
-Change it to `'merits-v5'`. This one matters more than usual: the file's own comment says routine updates do not need a bump because same-origin files use stale-while-revalidate. But this deploy *deletes* files the old shell precached, so a returning visitor's cached game must be purged rather than revalidated.
+Do not add a forced reload in `activate`, for two reasons:
+- It would also reload every first-time visitor.
+- Awaiting a client navigation inside `activate` can deadlock against the very activation it waits for.
 
 - [ ] **Step 3b: Clear the retired game's stored data**
 
@@ -1631,6 +1723,16 @@ Expected: **exactly two hits, both stale text rather than code** — `DEPLOY.md:
 
 **Never modify the `import ... from './_rag.js'` lines in `functions/api/`.** They are live backend imports, unrelated to the retired `js/rag.js`. An earlier version of this step used the pattern `rag\.js`, which also matches `_rag.js`, and said to fix every hit. Measured on 2026-09-13, that would have flagged all four working endpoint imports for "fixing".
 
+Then find every remaining mention of the old page name, since `chat.html` no longer exists after Step 1:
+
+```bash
+git grep -n 'chat\.html' -- . ':!docs' ':!.superpowers'
+```
+
+Expected, as of commit `afe6dbf`: **exactly four hits, all comments in `js/chat.js`**, at lines 58, 91, 152 and 161. Each says `chat.html` where it means the page that loads MathJax and marked. Reword each one to `index.html`.
+
+The line numbers shift if Task 3 changed `js/chat.js` again, but every hit must still be a comment. Anything else is a real dangling reference: a hit in another file, or a hit in code, a URL or a test path. Fix it and name it in the report.
+
 - [ ] **Step 5: Confirm the Python suite is unaffected**
 
 ```powershell
@@ -1643,22 +1745,44 @@ Expected: all tests pass. The tests exercise the API and the Python pipeline; no
 
 - [ ] **Step 6: Deploy**
 
+Stage explicitly. `git mv` and `git rm` in Steps 1–2 already staged the rename and the deletions, so add only the files this task modified, then check what is staged:
+
 ```bash
-git add -A
-git commit -m "feat(chat): promote chat to home page, retire skill-tree game"
-git push origin feat/socratic-rag-tutor
-git checkout main
-git pull origin main
-git merge feat/socratic-rag-tutor
-git push origin main
-git checkout feat/socratic-rag-tutor
+git add -- index.html sw.js js/chat.js chat.css DEPLOY.md functions/api/chat.js
+git status --short
 ```
 
-- [ ] **Step 7: Verify the deployed home page**
+Expected: the rename `chat.html -> index.html`, the ten deletions, and modifications to files from that list — nothing else. **Never `git add -A` or `git add .`**: the working tree holds untracked and gitignored files that must not be committed.
 
-Open `https://meritsofmath.pages.dev/` in the Browser pane. Verify the chat app loads (not the game), a conversation works end to end, and the console is clean.
+```bash
+git commit -m "feat(chat): promote chat to home page, retire skill-tree game"
+git merge-base --is-ancestor origin/main HEAD   # must succeed; if it fails, STOP and report
+git push origin feat/socratic-chat
+git checkout main
+git merge --ff-only feat/socratic-chat
+git push origin main
+git checkout feat/socratic-chat
+```
 
-Because the old service worker may still be serving cached game files to returning visitors, also verify in a fresh incognito window, and confirm a hard reload of a normal window picks up the new shell.
+Record the commit hash; it is what Step 0's git rollback reverts. Then poll `https://meritsofmath.pages.dev/` and `/sw.js` with a cache-busting query and a browser `User-Agent` (a bare client gets a 403) until `/` serves the chat page and `/sw.js` contains `merits-v5`. Poll those exact paths: Cloudflare Pages answers `/chat.html`-style URLs with a 308 redirect, which Windows PowerShell 5.1 does not follow.
+
+- [ ] **Step 7: Verify the deployed home page and the service worker**
+
+Open `https://meritsofmath.pages.dev/` in the Browser pane. Verify the chat app loads (not the game), a conversation works end to end, and the console is clean. Send exactly **one** message: the Groq free-tier quota is shared with everything else.
+
+Then verify the service worker, in this order. The Browser pane cannot open an incognito window, so these checks replace that.
+
+1. **Upgrade path — do this first, before clearing anything.** The Browser pane may still hold the old `merits-v4` worker from earlier testing. Record what the first load of `/` shows: the old cached game is acceptable, **once**, because the old worker handles that load. Reload. The second load must be the chat app, `navigator.serviceWorker.controller` must be set, and `await caches.keys()` must be exactly `['merits-v5']`.
+2. **Network-first, proven.** Plant a stale copy and confirm it is not served:
+   ```js
+   const c = await caches.open('merits-v5');
+   await c.put('/js/chat.js', new Response('/* stale */', { headers: { 'Content-Type': 'text/javascript' } }));
+   ```
+   Reload. `window.Chat` must be defined and the greeting must render. Then `(await (await c.match('/js/chat.js')).text()).length` must be far larger than the stub, because the network copy replaced it. Under the old stale-while-revalidate worker, this reload would have run the stub.
+3. **Only verified CDN responses are cached.** For every cached cross-origin entry in `merits-v5`, record `url`, `type` and `status`. Every entry must be `type 'cors'` with `status 200`, and none may be `opaque`. MathJax `tex-mml-chtml.js` and `ui/safe.js`, marked and DOMPurify must all be present.
+4. **Fresh visitor.** Unregister the worker, delete all caches, and reload. The page must load once, with no reload loop. The worker must install, the chat must render, and a seeded formula must typeset.
+
+Offline behaviour is verified in Task 5.
 
 ---
 
@@ -1689,7 +1813,12 @@ Still at 375px: confirm that pressing Return in the textarea inserts a newline r
 
 - [ ] **Step 3: Verify offline behaviour**
 
-Load the app, then in the Browser pane set the network to offline and reload. The shell (header, composer, greeting) must still render from the service worker cache. Sending a message while offline must show the friendly error bubble, not a raw exception or a blank reply.
+Load the app once online, so the service worker installs and caches the shell. Then take the page offline and reload. The shell (header, composer, greeting) must still render from the service worker cache. Sending a message while offline must show the friendly error bubble, not a raw exception or a blank reply.
+
+If the Browser pane cannot emulate being offline, say so in the report rather than skipping the check silently, and verify what can be checked instead:
+
+- `await caches.open('merits-v5')` holds `/`, `/chat.css`, `/manifest.webmanifest`, `/icons/icon.svg`, `/js/i18n.js` and `/js/chat.js`, each with `status 200`.
+- The friendly error path works when a send fails. In the page, keep a reference to `window.fetch` and replace it with a function that rejects. Send one message, confirm the error bubble appears and the unanswered turn is not saved to `meritsChatHistory`, then restore the real `fetch`. Nothing reaches the network this way, so it costs no quota.
 
 - [ ] **Step 4: Verify both languages end to end**
 
@@ -1709,13 +1838,23 @@ python -m pytest tests -v
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit any fixes**
+- [ ] **Step 6: Commit and deploy any fixes**
+
+Only if a step above required a change. Stage the specific files you changed. **Never `git add -A` or `git add .`**:
 
 ```bash
-git add -A
+git add -- chat.css js/chat.js
+git status --short
 git commit -m "fix(chat): mobile, offline and language polish"
-git push origin feat/socratic-rag-tutor
+git merge-base --is-ancestor origin/main HEAD   # must succeed; if it fails, STOP and report
+git push origin feat/socratic-chat
+git checkout main
+git merge --ff-only feat/socratic-chat
+git push origin main
+git checkout feat/socratic-chat
 ```
+
+Then re-run the step that failed, against the deployed site.
 
 ---
 
