@@ -75,16 +75,21 @@ body {
     contain: paint;
 }
 
-/* overflow-wrap lets long numbers and URLs wrap inside the bubble. Content that cannot wrap
-   (inline maths, which MathJax 3 does not line-break; long code lines) scrolls sideways inside
+/* Long unbroken text wraps inside the bubble, and content that cannot wrap scrolls sideways inside
    its own bubble instead of pushing the whole message list sideways. Measured at 375px on
-   2026-09-15: a 60-digit number, a long URL, a long inline formula and a long code line each
-   widened .messages to 866px.
+   2026-09-15, in bubbles 305px wide: a 60-digit number needed 502px, a long URL 779px, a long
+   inline formula 852px (MathJax 3 does not line-break) and a long code line 667px. The widest
+   stretched .messages to 866px.
+   break-word, not anywhere: `anywhere` also shrinks table cells' minimum width, so a wide table
+   was squeezed to fit instead of scrolling. It split place-value headers mid-word and 9-digit
+   numbers such as 342157896 across two lines, which a child reads as two numbers. With
+   break-word a table keeps whole words and scrolls inside its bubble. break-word also works on
+   Safari before 15.4, which ignores `anywhere`.
    flex-shrink: 0 is required alongside overflow-x. .messages is a flex column, and a scroll
    container's automatic minimum height is 0, so without it a conversation taller than the screen
    squashed every bubble (a one-line bubble to 28px of 46px) and gave each its own vertical
    scrollbar instead of scrolling the list. Measured on the live site, 2026-09-15. */
-.msg { max-width: 78%; padding: 11px 15px; border-radius: var(--radius-md); line-height: 1.55; font-size: 0.95rem; overflow-wrap: anywhere; overflow-x: auto; flex-shrink: 0; }
+.msg { max-width: 78%; padding: 11px 15px; border-radius: var(--radius-md); line-height: 1.55; font-size: 0.95rem; overflow-wrap: break-word; overflow-x: auto; flex-shrink: 0; }
 .msg p { margin: 0 0 8px; }
 .msg p:last-child { margin-bottom: 0; }
 .msg.ai { background: var(--bg-secondary); align-self: flex-start; border-bottom-left-radius: 6px; }
