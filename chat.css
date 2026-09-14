@@ -75,7 +75,12 @@ body {
     contain: paint;
 }
 
-.msg { max-width: 78%; padding: 11px 15px; border-radius: var(--radius-md); line-height: 1.55; font-size: 0.95rem; }
+/* overflow-wrap lets long numbers and URLs wrap inside the bubble. Content that cannot wrap
+   (inline maths, which MathJax 3 does not line-break; long code lines) scrolls sideways inside
+   its own bubble instead of pushing the whole message list sideways. Measured at 375px on
+   2026-09-15: a 60-digit number, a long URL, a long inline formula and a long code line each
+   widened .messages to 866px. */
+.msg { max-width: 78%; padding: 11px 15px; border-radius: var(--radius-md); line-height: 1.55; font-size: 0.95rem; overflow-wrap: anywhere; overflow-x: auto; }
 .msg p { margin: 0 0 8px; }
 .msg p:last-child { margin-bottom: 0; }
 .msg.ai { background: var(--bg-secondary); align-self: flex-start; border-bottom-left-radius: 6px; }
