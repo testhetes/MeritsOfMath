@@ -56,11 +56,24 @@ window.Chat = (function () {
     // An earlier version escaped `&` and `<` before marked ran instead; marked then escaped
     // code a second time, so `a<b` in backticks displayed as `a&lt;b` (measured, 2026-09-14).
     // marked 18 (pinned in chat.html) passes a token; the string branch is for older versions.
+    //
+    // `text` is overridden for the same reason. After an inline <pre>, <code>, <kbd> or <script>
+    // tag, marked's lexer treats the following text as raw, and its text renderer emits that text
+    // unescaped (marked 18.0.13 src/Tokenizer.ts:704-707 and 1041, src/Renderer.ts:198-201). It
+    // never passes through `html` above, so `Thu <kbd>x<y/z</kbd> va b>c` lost everything after
+    // "x" (measured 2026-09-14). That raw text is escaped here. Every other text token returns
+    // false, which falls back to marked's own renderer (src/Instance.ts:177-182).
     if (window.marked && window.marked.use) {
         window.marked.use({
             renderer: {
                 html(token) {
                     return escapeHtml(typeof token === 'string' ? token : token.text);
+                },
+                text(token) {
+                    if (token && typeof token === 'object' && token.escaped && !token.tokens) {
+                        return escapeHtml(token.text);
+                    }
+                    return false;
                 }
             }
         });
@@ -143,10 +156,47 @@ window.Chat = (function () {
     // caller below waits on the exact same readiness signal instead of each guessing whether
     // MathJax has loaded yet. (This poll is unbounded if the MathJax script never loads at all,
     // e.g. the CDN is unreachable -- a separately recorded minor issue, not changed here.)
+    //
+    // Readiness also means the maths is locked down; until it is, nothing typesets.
+    // - chat.html loads MathJax's ui/safe extension, but a safe.js that downloads and never runs
+    //   (a truncated or corrupt body) would let MathJax start without it. So the document must
+    //   actually carry `safe`.
+    // - ui/safe does not filter fontfamily, fontweight or fontstyle, and MathJax copies those raw
+    //   into a style string. `\mmlToken{mi}[fontfamily="x;position:fixed;..."]` and
+    //   `\unicode[x;position:fixed;...]` covered the whole page, clear button included (measured
+    //   2026-09-14). So a TeX post-filter deletes those three attributes from every node.
+    // The filter runs at priority -5.4: after ui/safe's own filter (-5.5), and before MathJax
+    // copies attributes down to child nodes (setInherited, -5), because the output reads
+    // inherited values too (MathJax-src 3.2.2 ts/input/tex.ts:142-147,
+    // ts/output/common/Wrapper.ts:439-453). Text nodes have no attributes object
+    // (ts/core/MmlTree/MmlNode.ts:1126), hence the guard. The filter must not return false,
+    // which would stop the filters after it.
+    // If the safe check fails, the promise never resolves and maths stays as plain text.
+    function lockDownMathJax() {
+        const doc = window.MathJax.startup.document;
+        if (!doc || !doc.safe) return false;
+        doc.inputJax.forEach((jax) => {
+            if (jax.name !== 'TeX') return;
+            jax.postFilters.add(({ data }) => {
+                data.root.walkTree((node) => {
+                    const attributes = node.attributes && node.attributes.getAllAttributes();
+                    if (attributes) {
+                        delete attributes.fontfamily;
+                        delete attributes.fontweight;
+                        delete attributes.fontstyle;
+                    }
+                });
+            }, -5.4);
+        });
+        return true;
+    }
+
     const mathJaxReadyPromise = new Promise((resolve) => {
         (function poll() {
             if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
-                window.MathJax.startup.promise.then(resolve);
+                window.MathJax.startup.promise.then(() => {
+                    if (lockDownMathJax()) resolve();
+                });
             } else {
                 setTimeout(poll, 30);
             }

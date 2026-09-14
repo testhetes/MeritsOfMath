@@ -23,9 +23,13 @@
         // \href{javascript:...}{...} became a clickable link that ran script, and
         // \style{position:fixed;...}{...} covered the whole page. \bbox[...] passes CSS through
         // as well. ui/safe (not bundled in tex-mml-chtml.js) strips every URL, class, id and
-        // style from typeset maths. If safe.js fails to load, MathJax's startup never finishes
-        // (MathJax-src 3.2.2 components/src/startup/startup.js: ready() only runs after every
-        // `load` entry succeeds), so js/chat.js never typesets and maths stays as plain text.
+        // style from typeset maths. It does NOT filter fontfamily, fontweight or fontstyle, which
+        // MathJax copies raw into a style string: \mmlToken{mi}[fontfamily="x;position:fixed;..."]
+        // and \unicode[x;position:fixed;...] still covered the page (measured 2026-09-14). So
+        // js/chat.js strips those three attributes from every formula too, and refuses to
+        // typeset at all unless MathJax's document really has the safe filter installed: if
+        // safe.js fails to load, MathJax's startup never finishes, and if it loads but never
+        // runs, the document has no `safe`. Either way maths stays as plain text.
         window.MathJax = {
             loader: {
                 load: ['ui/safe']

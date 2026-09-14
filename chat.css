@@ -67,6 +67,12 @@ body {
     flex-direction: column;
     gap: 12px;
     -webkit-overflow-scrolling: touch;
+    /* Makes this scroll area the containing block for any position:fixed descendant. MathJax
+       builds formula markup after the chat HTML is sanitised, and one route did let a replayed
+       formula carry position:fixed over the whole page (measured 2026-09-14). If any such route
+       ever reappears, the overlay stays trapped inside the message list instead of covering the
+       header's clear button and the composer, so a child cannot be locked out of the app. */
+    contain: paint;
 }
 
 .msg { max-width: 78%; padding: 11px 15px; border-radius: var(--radius-md); line-height: 1.55; font-size: 0.95rem; }
