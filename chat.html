@@ -16,11 +16,33 @@
         // site, 2026-09-13: `$\frac{1}{2}$` rendered 0 formulas. The tutor model emitted both
         // $...$ and \(...\) in consecutive replies, so both must be enabled. This config must
         // exist BEFORE tex-mml-chtml.js loads, or MathJax starts with its defaults.
+        //
+        // Chat text is steerable by the child and replayed from localStorage, and MathJax builds
+        // its output AFTER js/chat.js has sanitised the message HTML, so DOMPurify never sees it.
+        // Measured on the live site, 2026-09-14, without the settings below:
+        // \href{javascript:...}{...} became a clickable link that ran script, and
+        // \style{position:fixed;...}{...} covered the whole page. \bbox[...] passes CSS through
+        // as well. ui/safe (not bundled in tex-mml-chtml.js) strips every URL, class, id and
+        // style from typeset maths. If safe.js fails to load, MathJax's startup never finishes
+        // (MathJax-src 3.2.2 components/src/startup/startup.js: ready() only runs after every
+        // `load` entry succeeds), so js/chat.js never typesets and maths stays as plain text.
         window.MathJax = {
+            loader: {
+                load: ['ui/safe']
+            },
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true
+                processEscapes: true,
+                // Second layer: never load the html extension (\href, \style, \class, \cssId),
+                // whether automatically or by \require{html}.
+                autoload: { html: [] },
+                require: { allow: { html: false } }
+            },
+            options: {
+                safeOptions: {
+                    allow: { URLs: 'none', classes: 'none', cssIDs: 'none', styles: 'none' }
+                }
             },
             startup: {
                 // js/chat.js is the only thing that ever typesets (see its comments for why).
@@ -35,8 +57,12 @@
             }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <!-- Both pinned to exact versions (byte-identical to what the floating URLs served on
+         2026-09-14): the safe-mode config above depends on MathJax 3.x, ui/safe loads from the
+         same versioned path, and js/chat.js overrides marked's html renderer, whose signature
+         has changed between marked major versions. -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@18.0.13/lib/marked.umd.js"></script>
     <!-- marked does not sanitise its output; DOMPurify cleans it before chat.js ever touches
          innerHTML (see js/chat.js). Pinned to an exact version so a CDN update can't change
          sanitising behaviour under us. -->

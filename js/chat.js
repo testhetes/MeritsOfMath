@@ -46,33 +46,40 @@ window.Chat = (function () {
         return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // marked does not sanitise: it treats any `<` in its input as the start of raw HTML and
-    // passes that HTML straight through unchanged. Left alone, that means two problems at once:
-    // `a<b` is parsed as an (unknown) tag and vanishes from the rendered text, and something
-    // like `<img src=x onerror=...>` -- which the child can steer, since it comes from the
-    // tutor's reply as well as the child's own message, and both are replayed from
-    // localStorage on every future visit -- would run unchanged. So `&` and `<` are escaped
-    // BEFORE marked ever sees the text; none of the markdown marked is asked to render here
-    // (bold, italics, lists, > blockquotes, headings) needs a literal `&` or `<` character, so
-    // this does not break legitimate formatting. `>` is left alone: escaping it is not needed
-    // for safety (a lone `>` cannot open a tag) and would break `> blockquote` syntax.
-    // marked's output is then sanitised again below with an allowlist, since escaping `<` on
-    // the way in stops HTML from appearing in the source text but says nothing about what
-    // marked itself might emit (e.g. an `<a href="javascript:...">` from a markdown link).
-    function escapeAmpLt(s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    // marked does not sanitise: raw HTML in its input (`<img src=x onerror=...>`, `<style>`,
+    // `<base href>`) goes straight through its `html` renderer, and `a<b va b>c` is parsed as a
+    // tag and vanishes. Both the child's own message and the tutor's reply (which the child can
+    // steer) reach this code, and both are replayed from localStorage on every visit. So that
+    // one renderer method is overridden to show raw HTML as visible text. marked.use extends
+    // marked's renderer rather than replacing it, and this runs once, when the module loads.
+    // Everything else (text, code spans, fenced code) marked escapes itself, exactly once.
+    // An earlier version escaped `&` and `<` before marked ran instead; marked then escaped
+    // code a second time, so `a<b` in backticks displayed as `a&lt;b` (measured, 2026-09-14).
+    // marked 18 (pinned in chat.html) passes a token; the string branch is for older versions.
+    if (window.marked && window.marked.use) {
+        window.marked.use({
+            renderer: {
+                html(token) {
+                    return escapeHtml(typeof token === 'string' ? token : token.text);
+                }
+            }
+        });
     }
 
-    // Explicit allowlist for DOMPurify: only the tags/attributes marked's own Markdown syntax
-    // can produce. MathJax typesets AFTER this sanitised HTML is inserted and builds its own
-    // <mjx-container> elements directly in the DOM, not through this HTML string, so the
-    // allowlist does not need to (and must not) include MathJax's tags.
+    // Explicit allowlist for DOMPurify, applied to marked's output: formatting tags only.
+    // Links are deliberately NOT allowed. marked turns markdown links, <url> autolinks, bare
+    // URLs, www. hosts and email addresses into <a>, and a reply the child can steer could
+    // then put a one-tap link off this site in front of a 6-10-year-old -- measured on the
+    // live site, 2026-09-14, where tapping such a link navigated the chat tab away. With `a`
+    // off the list DOMPurify drops the element but keeps its text, so the address stays
+    // readable. `start` keeps a numbered list that resumes after a paragraph numbered right.
+    // MathJax builds its own elements AFTER this sanitising, directly in the DOM, so nothing
+    // here restricts them: chat.html restricts MathJax with its ui/safe extension instead.
     const SANITISE = {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'del', 'code', 'pre', 'blockquote',
-                       'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'a',
+                       'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr',
                        'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span'],
-        ALLOWED_ATTR: ['href', 'title'],
-        ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i
+        ALLOWED_ATTR: ['start']
     };
 
     // Renders one message's markdown+maths to an HTML string. Does NOT sanitise -- every
@@ -86,14 +93,13 @@ window.Chat = (function () {
             return '@@MATH' + (math.length - 1) + '@@';
         });
 
-        const escaped = escapeAmpLt(shielded);
-
         let html;
         if (window.marked && window.marked.parse) {
-            html = window.marked.parse(escaped, { breaks: true });
+            html = window.marked.parse(shielded, { breaks: true });
         } else {
+            // No marked: show the text as it is, escaped exactly once by the browser.
             const div = document.createElement('div');
-            div.textContent = escaped;
+            div.textContent = shielded;
             html = div.innerHTML;
         }
 
