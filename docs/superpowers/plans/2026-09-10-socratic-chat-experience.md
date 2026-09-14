@@ -981,6 +981,28 @@ Built at `chat.html` rather than replacing `index.html`, so production keeps ser
 1. **MathLive is dropped.** The spec lists it under "keep", but it exists so a student can *enter* LaTeX — which matters for Grade 11 logarithms and not for Grade 1–5, where answers are small whole numbers and simple fractions typed on a normal keyboard. It is a heavy CDN dependency and an extra input mode for a six-year-old to understand. MathJax is kept, so maths in the tutor's *replies* still renders. `mathjs` is dropped for the same reason: it existed to evaluate a student's symbolic answer against a target, and the chat tutor has no answer-checking step.
 2. **`debug.html` is deleted in Task 4.** The spec suggests extending it to probe `/api/retrieve`, but that page was built to diagnose the old provider chain against `js/aiTutor.js`, which is being retired. `/api/retrieve` remains a live, secret-gated endpoint and is directly callable for debugging, which covers the same need without a page that has to be kept in sync.
 
+> **Superseded — the shipped code is authoritative for all of Task 3.**
+>
+> The code blocks in this task are the original design. Review found real defects in them, and four fix rounds changed `chat.html`, `js/chat.js` and `chat.css`. Task 3 closed at commit `afe6dbf`. **The committed files are authoritative: wherever the code below differs from them, the committed files win.**
+>
+> **What changed, and why:**
+>
+> - **Typesetting.** Fix rounds 1–2, commits `0251985` and `9b8252c`. MathJax's automatic startup typeset is off. Every bubble is typeset exactly once, through one serialised queue with a `WeakSet` guard, because re-typesetting nested duplicate formulas. See also the note above Step 4.
+> - **HTML safety.** Fix rounds 2–3, commits `9b8252c` and `4f9c312`.
+>   - marked's `html` renderer shows raw HTML as visible text.
+>   - DOMPurify then sanitises marked's output against an allowlist of formatting tags.
+>   - Links are not allowed, so no chat text can send a child off the site with one tap.
+>   - `start` is kept, so a numbered list that resumes after a paragraph keeps its numbering.
+>   - DOMPurify 3.4.15, marked 18.0.13 and MathJax 3.2.2 are pinned to exact versions.
+> - **MathJax lock-down.** Fix rounds 3–4, commits `4f9c312` and `afe6dbf`.
+>   - `ui/safe` is loaded, with URLs, classes, ids and styles all disallowed, and the html extension is blocked.
+>   - `js/chat.js` refuses to typeset unless MathJax's document really has the safe filter installed.
+>   - `js/chat.js` strips `fontfamily`, `fontweight` and `fontstyle` from every formula. ui/safe does not filter those attributes, and they let a stored formula cover the whole page.
+>   - marked's `text` renderer escapes the raw text that follows an inline `<pre>`, `<code>`, `<kbd>` or `<script>` tag.
+> - **Overlay containment.** Fix round 4, commit `afe6dbf`. `.messages` has `contain: paint`, so no positioned formula can cover the header or the composer.
+>
+> Smaller issues found in review and deliberately left for later are recorded as deferred minors for the Plan 2 final review.
+
 - [ ] **Step 1: Add the i18n strings**
 
 In `js/i18n.js`, inside the `DICT` object, add this block immediately before the closing `};` of `DICT`:
