@@ -79,8 +79,12 @@ body {
    (inline maths, which MathJax 3 does not line-break; long code lines) scrolls sideways inside
    its own bubble instead of pushing the whole message list sideways. Measured at 375px on
    2026-09-15: a 60-digit number, a long URL, a long inline formula and a long code line each
-   widened .messages to 866px. */
-.msg { max-width: 78%; padding: 11px 15px; border-radius: var(--radius-md); line-height: 1.55; font-size: 0.95rem; overflow-wrap: anywhere; overflow-x: auto; }
+   widened .messages to 866px.
+   flex-shrink: 0 is required alongside overflow-x. .messages is a flex column, and a scroll
+   container's automatic minimum height is 0, so without it a conversation taller than the screen
+   squashed every bubble (a one-line bubble to 28px of 46px) and gave each its own vertical
+   scrollbar instead of scrolling the list. Measured on the live site, 2026-09-15. */
+.msg { max-width: 78%; padding: 11px 15px; border-radius: var(--radius-md); line-height: 1.55; font-size: 0.95rem; overflow-wrap: anywhere; overflow-x: auto; flex-shrink: 0; }
 .msg p { margin: 0 0 8px; }
 .msg p:last-child { margin-bottom: 0; }
 .msg.ai { background: var(--bg-secondary); align-self: flex-start; border-bottom-left-radius: 6px; }
