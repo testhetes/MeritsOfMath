@@ -71,8 +71,9 @@ window.Chat = (function () {
     // URLs, www. hosts and email addresses into <a>, and a reply the child can steer could
     // then put a one-tap link off this site in front of a 6-10-year-old -- measured on the
     // live site, 2026-09-14, where tapping such a link navigated the chat tab away. With `a`
-    // off the list DOMPurify drops the element but keeps its text, so the address stays
-    // readable. `start` keeps a numbered list that resumes after a paragraph numbered right.
+    // off the list DOMPurify drops the element but keeps its visible text: a bare URL still
+    // reads as the address, a markdown link as its label only. `start` keeps a numbered list
+    // that resumes after a paragraph numbered correctly.
     // MathJax builds its own elements AFTER this sanitising, directly in the DOM, so nothing
     // here restricts them: chat.html restricts MathJax with its ui/safe extension instead.
     const SANITISE = {
