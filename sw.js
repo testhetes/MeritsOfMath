@@ -1,42 +1,38 @@
 // Service worker for Merits of Math.
 //
 // Strategy:
-//   - Same-origin app files (html/css/js/icons): STALE-WHILE-REVALIDATE. Serve the cached
-//     copy instantly (fast + offline), and fetch a fresh copy in the background so the NEXT
-//     load is up to date. This means code changes propagate on their own — no need to bump
-//     the cache version on every deploy.
-//   - Cross-origin CDN libraries (MathJax, MathLive, mathjs, marked, fonts): CACHE-FIRST,
-//     since they're versioned/immutable — once cached they never need refetching.
+//   - Same-origin app files (html/css/js/icons): NETWORK-FIRST, falling back to the cache only
+//     when the network fails, so a deploy reaches a returning visitor on their next load. A
+//     cache-first strategy would run the OLD code on the first load after every deploy, which
+//     after a safety fix means the old renderer replaying a stored conversation. There is
+//     deliberately no timeout: one would pair a fresh page with stale scripts on a slow
+//     connection, and the chat needs the network for every message anyway.
+//   - Cross-origin CDN libraries (all pinned to exact, immutable versions): CACHE-FIRST. The
+//     worker fetches each one itself in CORS mode and caches it only if the response is a
+//     verified success. Opaque responses are never cached: their status cannot be read, so a
+//     failed download could otherwise be kept forever.
 //   - The AI proxy (/api/) is never intercepted; those calls always hit the network.
 //
-// Only bump CACHE for a hard reset (e.g. to purge everything). Routine updates no longer
-// require it.
+// Bump CACHE only to purge everything, for example when files are deleted.
 
-const CACHE = 'merits-v4';
+const CACHE = 'merits-v5';
 
+// './index.html' is deliberately absent: Cloudflare Pages answers /index.html with a 308
+// redirect to /, and './' already covers the page.
 const APP_SHELL = [
     './',
-    './index.html',
-    './style.css',
+    './chat.css',
     './manifest.webmanifest',
     './icons/icon.svg',
     './js/i18n.js',
-    './js/db.js',
-    './js/rag.js',
-    './js/progression.js',
-    './js/dashboard.js',
-    './js/battleSystem.js',
-    './js/aiTutor.js',
-    './js/uiHelpers.js',
-    './js/app.js'
+    './js/chat.js'
 ];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE)
-            // Precache with {cache:'reload'} so install always pulls fresh from the network,
-            // never the browser's HTTP cache — otherwise a deploy can be precached stale.
-            // allSettled so one bad asset can't block install.
+            // {cache:'reload'} so install always pulls fresh from the network, never the browser's
+            // HTTP cache. allSettled so one bad asset can't block install.
             .then((cache) => Promise.allSettled(APP_SHELL.map((url) => cache.add(new Request(url, { cache: 'reload' })))))
             .then(() => self.skipWaiting())
     );
@@ -53,42 +49,46 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const req = event.request;
 
-    // Only handle GET. POSTs (the AI tutor calls) always hit the network.
+    // Only handle GET. POSTs (the tutor calls) always hit the network.
     if (req.method !== 'GET') return;
 
     const url = new URL(req.url);
 
-    // Never intercept the AI proxy — responses must stay live.
-    if (url.pathname.startsWith('/api/')) return;
-
-    const sameOrigin = url.origin === self.location.origin;
-
-    if (sameOrigin) {
-        // Stale-while-revalidate: return cache now, refresh cache in the background.
-        event.respondWith(
-            caches.open(CACHE).then((cache) =>
-                cache.match(req).then((cached) => {
-                    const network = fetch(req).then((res) => {
-                        if (res && res.ok) cache.put(req, res.clone());
-                        return res;
-                    }).catch(() => cached);
-                    return cached || network;
-                })
-            )
-        );
+    if (url.origin === self.location.origin) {
+        // Never intercept the AI proxy: its responses must stay live.
+        if (url.pathname.startsWith('/api/')) return;
+        event.respondWith(networkFirst(req));
     } else {
-        // Cross-origin CDN assets: cache-first (immutable), cache on first fetch.
-        event.respondWith(
-            caches.match(req).then((cached) => {
-                if (cached) return cached;
-                return fetch(req).then((res) => {
-                    if (res && (res.ok || res.type === 'opaque')) {
-                        const clone = res.clone();
-                        caches.open(CACHE).then((cache) => cache.put(req, clone));
-                    }
-                    return res;
-                }).catch(() => cached);
-            })
-        );
+        event.respondWith(cacheFirstVerified(req));
     }
 });
+
+// Network when reachable (refreshing the cache on success), cache only when it is not.
+function networkFirst(req) {
+    return fetch(req)
+        .then((res) => {
+            if (res && res.ok) {
+                const copy = res.clone();
+                caches.open(CACHE).then((cache) => cache.put(req, copy));
+            }
+            return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || Response.error()));
+}
+
+// Cached copy if there is one. Otherwise fetch in CORS mode and cache only a readable success.
+// A CORS response may answer the page's own no-cors <script> request. If the CORS fetch
+// fails or is not ok, the page's request is passed through unchanged and nothing is cached.
+function cacheFirstVerified(req) {
+    return caches.match(req.url).then((cached) => {
+        if (cached) return cached;
+        return fetch(req.url, { mode: 'cors', credentials: 'omit' })
+            .then((res) => {
+                if (!res.ok) return fetch(req);
+                const copy = res.clone();
+                caches.open(CACHE).then((cache) => cache.put(req.url, copy));
+                return res;
+            })
+            .catch(() => fetch(req));
+    });
+}

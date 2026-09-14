@@ -1,7 +1,7 @@
 # Deploying Merits of Math (free)
 
-The app is a static site (`index.html` + `js/` + `style.css`) plus one serverless
-function that hides the AI API key. Both halves fit comfortably in free tiers.
+The app is a static chat page (`index.html` + `chat.css` + `js/`) plus serverless
+functions that hide the AI API keys. Both halves fit comfortably in free tiers.
 
 ## Architecture
 

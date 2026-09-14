@@ -1,8 +1,9 @@
 // Cloudflare Pages Function — serves at /api/chat
 //
-// Holds AI provider keys server-side so the browser never sees them. The frontend
-// (js/aiTutor.js) POSTs an OpenAI-style { messages, temperature, max_tokens } body;
-// this function injects the right key, pins the model, and forwards it.
+// Holds AI provider keys server-side so the browser never sees them. The chat frontend
+// (js/chat.js) POSTs an OpenAI-style { messages, max_tokens } body plus `ground` and `lang`;
+// this function injects the right key, pins the model, and forwards it. With `ground: true`
+// it first retrieves curriculum context and builds the Socratic system prompt server-side.
 //
 // MULTI-PROVIDER WITH FALLBACK: it tries providers in order and, if one is rate-limited
 // (429) or erroring (5xx / network), falls through to the next. Only providers whose key

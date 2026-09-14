@@ -34,6 +34,20 @@ window.Chat = (function () {
         }
     }
 
+    // Keys written by the retired skill-tree game (js/aiTutor.js, js/progression.js). That code is
+    // gone, but the values persist in every visitor's browser on this origin — including any Groq
+    // API key a user once pasted into the old Settings modal. Remove them. The chat's own keys,
+    // meritsChatHistory and meritsLang, are deliberately NOT in this list.
+    const RETIRED_KEYS = ['groqApiKey', 'localApiBaseUrl', 'localModelName', 'aiProvider', 'meritsProfile_v2'];
+
+    function clearRetiredStorage() {
+        try {
+            RETIRED_KEYS.forEach((key) => localStorage.removeItem(key));
+        } catch {
+            // Storage is unavailable, so the retired game could never have stored anything here.
+        }
+    }
+
     // Maths must be shielded from marked. CommonMark treats \( \) \[ \] as escaped brackets,
     // so marked strips the backslashes and MathJax never sees the delimiters. Measured on the
     // live site, 2026-09-13: marked turned `\(1 + 2 + 3 = 6\)` into `(1 + 2 + 3 = 6)`, and
@@ -55,7 +69,7 @@ window.Chat = (function () {
     // Everything else (text, code spans, fenced code) marked escapes itself, exactly once.
     // An earlier version escaped `&` and `<` before marked ran instead; marked then escaped
     // code a second time, so `a<b` in backticks displayed as `a&lt;b` (measured, 2026-09-14).
-    // marked 18 (pinned in chat.html) passes a token; the string branch is for older versions.
+    // marked 18 (pinned in index.html) passes a token; the string branch is for older versions.
     //
     // `text` is overridden for the same reason. After an inline <pre>, <code>, <kbd> or <script>
     // tag, marked's lexer treats the following text as raw, and its text renderer emits that text
@@ -88,7 +102,7 @@ window.Chat = (function () {
     // reads as the address, a markdown link as its label only. `start` keeps a numbered list
     // that resumes after a paragraph numbered correctly.
     // MathJax builds its own elements AFTER this sanitising, directly in the DOM, so nothing
-    // here restricts them: chat.html restricts MathJax with its ui/safe extension instead.
+    // here restricts them: index.html restricts MathJax with its ui/safe extension instead.
     const SANITISE = {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'del', 'code', 'pre', 'blockquote',
                        'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr',
@@ -149,7 +163,7 @@ window.Chat = (function () {
     //      is a no-op instead of a second pass over the same formulas.
 
     // The MathJax script tag is `async`, so window.MathJax can still be just the plain config
-    // object from chat.html (no `.typesetPromise`) when this file's other functions run. Once
+    // object from index.html (no `.typesetPromise`) when this file's other functions run. Once
     // the library loads, it augments that same object with `startup.promise`, a promise that
     // resolves when MathJax's own startup (input/output jax, document setup) is ready --
     // see https://docs.mathjax.org/en/latest/web/typeset.html. Poll for that property so every
@@ -158,7 +172,7 @@ window.Chat = (function () {
     // e.g. the CDN is unreachable -- a separately recorded minor issue, not changed here.)
     //
     // Readiness also means the maths is locked down; until it is, nothing typesets.
-    // - chat.html loads MathJax's ui/safe extension, but a safe.js that downloads and never runs
+    // - index.html loads MathJax's ui/safe extension, but a safe.js that downloads and never runs
     //   (a truncated or corrupt body) would let MathJax start without it. So the document must
     //   actually carry `safe`.
     // - ui/safe does not filter fontfamily, fontweight or fontstyle, and MathJax copies those raw
@@ -378,6 +392,7 @@ window.Chat = (function () {
     }
 
     function init() {
+        clearRetiredStorage();   // first, before anything else reads storage (see RETIRED_KEYS)
         els.messages = document.getElementById('messages');
         els.suggestions = document.getElementById('suggestions');
         els.input = document.getElementById('input');
