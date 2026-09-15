@@ -62,9 +62,9 @@ const PROVIDERS = {
         url: 'https://openrouter.ai/api/v1/chat/completions',
         available: (env) => !!env.OPENROUTER_API_KEY,
         key: (env) => env.OPENROUTER_API_KEY,
-        // Same model as the Groq primary, so fallback replies are indistinguishable. NOTE:
-        // OpenRouter :free models are shared capacity and often rate-limited; treat this as
-        // a best-effort middle layer. If the slug 404s ("paid version available"), pick a
+        // A different model family from the Groq primary (Qwen), so fallback replies can differ
+        // in style. NOTE: OpenRouter :free models are shared capacity and often rate-limited; treat this as
+        // a best-effort last layer. If the slug 404s ("paid version available"), pick a
         // current :free model from https://openrouter.ai/models and set OPENROUTER_MODEL.
         model: (env) => env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free'
     },
@@ -120,8 +120,9 @@ export async function onRequestPost({ request, env }) {
     const maxTokens = Math.min(Number(body.max_tokens) || 150, MAX_TOKENS_CAP);
 
     // Grounded mode: retrieve curriculum context and prepend our own Socratic system
-    // prompt, replacing any the client sent. Opt-in via `ground`, so the older game
-    // frontend — which builds its own prompt — is unaffected.
+    // prompt, replacing any the client sent. Opt-in via `ground`: the chat frontend always
+    // sends it, and ungrounded requests (a client-supplied prompt) still work for API and
+    // test callers.
     let ragChunkCount = null;
     let ragError = null;
     if (body.ground === true) {
@@ -252,7 +253,8 @@ export async function onRequestPost({ request, env }) {
     ), ragChunkCount, ragError);
 }
 
-// Non-POST methods receive Cloudflare's automatic 405 (no handler defined for them).
+// Only POST is handled here. Other methods fall through to the static site, which answers with
+// the app page (Cloudflare Pages' single-page fallback), not a 405.
 
 // Build the retrieval query from the last two student turns, not just the latest one.
 // Most chat turns are short replies — "5", "em không biết", "dạ" — which retrieve nothing

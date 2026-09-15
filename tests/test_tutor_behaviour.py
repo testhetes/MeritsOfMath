@@ -53,7 +53,7 @@ def _leaked_answers(reply, forbidden):
 
 # Known, accepted limitation: whole-token matching still flags an ordinary
 # phrase that happens to contain a spelled-out answer, e.g. "thứ bảy"
-# ("Saturday") when 7 is forbidden. Unlikely in a maths tutoring reply, so
+# ("Saturday") when the spelled form "bảy" (7) is forbidden. Unlikely in a maths tutoring reply, so
 # this is left as-is rather than grown into a stop-word list.
 
 

@@ -1,7 +1,7 @@
 {
     "name": "Merits of Math",
     "short_name": "MeritsMath",
-    "description": "AI-powered gamified mathematics learning platform for Vietnamese students.",
+    "description": "A Socratic maths tutor that helps Vietnamese Grade 1-5 students think problems through.",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",

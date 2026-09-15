@@ -76,7 +76,7 @@ def test_offtopic_message_still_gets_a_reply(base_url):
 
 
 def test_ungrounded_request_is_unchanged(base_url):
-    """The existing game frontend sends no `ground` flag and must keep working."""
+    """A request without a `ground` flag (API and test callers) must keep working."""
     r = _chat(base_url, {
         "messages": [
             {"role": "system", "content": "Reply with exactly the word BANANA and nothing else."},

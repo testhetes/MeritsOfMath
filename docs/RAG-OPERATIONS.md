@@ -36,19 +36,20 @@ All four live in `functions/api/`, but only three of them require the
 `Authorization: Bearer $INGEST_SECRET` header: `/api/rag-status`,
 `/api/ingest` and `/api/retrieve` are secret-gated and unreachable by a
 student. `/api/chat` is deliberately **public** — a student's browser has no
-secret to send and must be able to reach it directly. That is exactly why the
-AI provider keys (`GROQ_API_KEY` and friends) live server-side in
-`functions/api/chat.js` rather than in the frontend: the one thing that must
-stay secret never reaches the browser, and the endpoint the browser calls
-needs no secret of its own. `/api/chat` does not retrieve from the index
-today — it is a straight proxy to the configured AI providers.
+secret to send and must be able to reach it directly. The AI provider keys
+(`GROQ_API_KEY` and friends) live server-side in `functions/api/chat.js` so they
+never reach the browser at all; that would be required whether or not the
+endpoint were gated. When a request carries `ground: true` — the chat frontend
+always sends it — `/api/chat` retrieves curriculum context through `search()`
+in `_rag.js`, builds the Socratic system prompt server-side, and only then calls
+the providers. Without `ground` it is a straight proxy.
 
 | Endpoint | Purpose |
 |---|---|
 | `POST /api/rag-status` | secret-gated. diagnostics: embedding model, live embedding dimension, index description (`vectorCount`, `processedUpToMutation`) |
 | `POST /api/ingest` | secret-gated. the **only** way anything is written: upserts chunks, deletes ids |
 | `POST /api/retrieve` | secret-gated. semantic search, used by the eval |
-| `POST /api/chat` | public. the student-facing endpoint; proxies to an AI provider, no retrieval yet |
+| `POST /api/chat` | public. the student-facing endpoint; with `ground: true` it retrieves context via `search()`, then calls an AI provider |
 
 `_rag.js` is shared by all of them. In particular `embed()` is the single
 embedding path — index-time and query-time vectors can never come from
