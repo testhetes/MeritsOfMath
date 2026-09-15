@@ -62,8 +62,9 @@ window.Chat = (function () {
 
     // marked does not sanitise: raw HTML in its input (`<img src=x onerror=...>`, `<style>`,
     // `<base href>`) goes straight through its `html` renderer, and `a<b va b>c` is parsed as a
-    // tag and vanishes. Both the child's own message and the tutor's reply (which the child can
-    // steer) reach this code, and both are replayed from localStorage on every visit. So that
+    // tag and vanishes. The tutor's reply reaches this code (the child's own message is shown as
+    // plain text, see appendBubble); the child can steer that reply, and it is replayed from
+    // localStorage on every visit. So that
     // one renderer method is overridden to show raw HTML as visible text. marked.use extends
     // marked's renderer rather than replacing it, and this runs once, when the module loads.
     // Everything else (text, code spans, fenced code) marked escapes itself, exactly once.
@@ -182,8 +183,9 @@ window.Chat = (function () {
     // The filter runs at priority -5.4: after ui/safe's own filter (-5.5), and before MathJax
     // copies attributes down to child nodes (setInherited, -5), because the output reads
     // inherited values too (MathJax-src 3.2.2 ts/input/tex.ts:142-147,
-    // ts/output/common/Wrapper.ts:439-453). Text nodes have no attributes object
-    // (ts/core/MmlTree/MmlNode.ts:1126), hence the guard. The filter must not return false,
+    // ts/output/common/Wrapper.ts:439-453). The null guard is defensive: a token node's walkTree
+    // skips its text children (ts/core/MmlTree/MmlNode.ts:879-887), and the empty nodes that hold
+    // text have no attributes object (MmlNode.ts:1126). The filter must not return false,
     // which would stop the filters after it.
     // If the safe check fails, the promise never resolves and maths stays as plain text.
     function lockDownMathJax() {
@@ -253,14 +255,21 @@ window.Chat = (function () {
     function appendBubble(role, text, extraClass) {
         const div = document.createElement('div');
         div.className = 'msg ' + (extraClass || (role === 'user' ? 'user' : 'ai'));
-        // DOMPurify sanitises marked's output against an explicit allowlist before it ever
-        // reaches innerHTML -- marked itself does not sanitise, and both the child's own
-        // message and the tutor's reply (which the child can steer) are saved to localStorage
-        // and replayed on every future visit, so unsanitised HTML here would run again and
-        // again. If DOMPurify itself is unavailable (its CDN script blocked or failed to load),
-        // fail safe: render as plain text via textContent rather than ever falling back to
-        // unsanitised innerHTML.
-        if (window.DOMPurify && window.DOMPurify.sanitize) {
+        if (role === 'user') {
+            // The child's own message is shown exactly as typed, never as markdown. A child
+            // types `2*3*4` to multiply, and markdown turned it into 2<em>3</em>4, which read as
+            // "234" (confirmed on the live site, 2026-09-15); lines starting "1.", "-" or "#"
+            // likewise became lists or headings. textContent cannot carry HTML, and chat.css
+            // keeps the child's line breaks. MathJax still typesets any maths the child typed,
+            // under the same lock-down as every other bubble.
+            div.textContent = text;
+        } else if (window.DOMPurify && window.DOMPurify.sanitize) {
+            // The tutor's reply is markdown. DOMPurify sanitises marked's output against an
+            // explicit allowlist before it reaches innerHTML: marked itself does not sanitise,
+            // the child can steer the reply, and it is replayed from localStorage on every
+            // future visit, so unsanitised HTML here would run again and again. If DOMPurify
+            // is unavailable (its CDN script blocked or failed to load), fail safe: render
+            // plain text rather than ever falling back to unsanitised innerHTML.
             div.innerHTML = window.DOMPurify.sanitize(renderMarkdown(text), SANITISE);
         } else {
             div.textContent = text;
@@ -392,7 +401,7 @@ window.Chat = (function () {
     }
 
     function init() {
-        clearRetiredStorage();   // first, before anything else reads storage (see RETIRED_KEYS)
+        clearRetiredStorage();   // first, before load() reads the conversation (see RETIRED_KEYS)
         els.messages = document.getElementById('messages');
         els.suggestions = document.getElementById('suggestions');
         els.input = document.getElementById('input');

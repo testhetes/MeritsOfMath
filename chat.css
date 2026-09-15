@@ -93,7 +93,9 @@ body {
 .msg p { margin: 0 0 8px; }
 .msg p:last-child { margin-bottom: 0; }
 .msg.ai { background: var(--bg-secondary); align-self: flex-start; border-bottom-left-radius: 6px; }
-.msg.user { background: linear-gradient(135deg, var(--accent-primary), #6366f1); color: #fff; align-self: flex-end; border-bottom-right-radius: 6px; }
+/* The child's own message is plain text (see appendBubble in js/chat.js); pre-wrap keeps the line
+   breaks they typed with Shift+Enter. */
+.msg.user { background: linear-gradient(135deg, var(--accent-primary), #6366f1); color: #fff; align-self: flex-end; border-bottom-right-radius: 6px; white-space: pre-wrap; }
 .msg.error { background: rgba(248, 113, 113, 0.14); color: var(--danger); align-self: flex-start; }
 
 .typing { display: flex; gap: 5px; align-self: flex-start; padding: 14px 16px; background: var(--bg-secondary); border-radius: var(--radius-md); }
