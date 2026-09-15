@@ -14,12 +14,16 @@
 //   GROQ_API_KEY         Groq key (gsk_...)                        https://console.groq.com
 //   OPENROUTER_API_KEY   OpenRouter key                            https://openrouter.ai/keys
 //   GEMINI_API_KEY       Google AI Studio key                      https://aistudio.google.com/apikey
-// Bindings (Pages project → Settings → Bindings → Add → Workers AI, name it "AI"):
-//   AI                   enables the "workersai" provider — Llama 70B running on your own
-//                        Cloudflare account's daily allowance (not shared with other users,
-//                        so it's the most predictable free layer; ideal last resort).
+// Bindings (Pages project → Settings → Bindings):
+//   AI                   Workers AI: the embeddings used for grounding, and the "workersai"
+//                        provider — Llama 3.3 70B on your own Cloudflare account's daily
+//                        allowance (not shared with other users), second in the default order.
+//   VECTORIZE            the merits-kb index searched for grounding. Without it (or AI), a
+//                        grounded request still answers, ungrounded, with X-RAG-Error set.
 // Optional overrides:
-//   GROQ_MODEL / OPENROUTER_MODEL / GEMINI_MODEL / WORKERSAI_MODEL   pin a different model
+//   GROQ_MODEL / OPENROUTER_MODEL / GEMINI_MODEL / WORKERSAI_MODEL   emergency use only: the
+//                    defaults below are the source of truth, and a stale GROQ_MODEL once kept
+//                    a retired model in place after the default was updated. Remove after use.
 //   PROVIDER_ORDER   preferred comma list (default: groq,workersai,openrouter); configured
 //                    providers not listed are auto-appended as last resorts
 //   ALLOWED_ORIGIN   e.g. https://meritsofmath.pages.dev — soft-blocks other origins
@@ -77,8 +81,9 @@ const PROVIDERS = {
     workersai: {
         binding: true,
         available: (env) => !!env.AI,
-        // Same Llama 70B family, served from this Cloudflare account's own daily allowance —
-        // not shared with strangers, so it's the most predictable layer in the chain.
+        // Llama 3.3 70B (a different family from the Qwen primary), served from this Cloudflare
+        // account's own daily allowance — not shared with strangers, so it's the most
+        // predictable layer in the chain.
         model: (env) => env.WORKERSAI_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
     }
 };
@@ -87,8 +92,9 @@ const PROVIDERS = {
 // allowance (nobody else's traffic can exhaust it), so when Groq blips — which happens
 // per-IP at busy Cloudflare edges, i.e. exactly when "other devices" report failures —
 // the dependable layer catches it immediately instead of after a doomed hop through
-// OpenRouter's often-rate-limited shared pool. Gemini is out of the default — add it
-// via PROVIDER_ORDER if its free tier works for your account/region.
+// OpenRouter's often-rate-limited shared pool. Gemini is not in the default order: setting
+// GEMINI_API_KEY appends it after the others as a last resort (see the auto-append in
+// onRequestPost), and listing it in PROVIDER_ORDER tries it earlier.
 const DEFAULT_ORDER = ['groq', 'workersai', 'openrouter'];
 
 export async function onRequestPost({ request, env }) {
@@ -253,8 +259,9 @@ export async function onRequestPost({ request, env }) {
     ), ragChunkCount, ragError);
 }
 
-// Only POST is handled here. Other methods fall through to the static site, which answers with
-// the app page (Cloudflare Pages' single-page fallback), not a 405.
+// Only POST is handled here. GET and HEAD fall through to the static site, which answers with
+// the app page (Cloudflare Pages' single-page fallback); other methods such as OPTIONS and PUT
+// get a 405 (measured with curl, 2026-09-15).
 
 // Build the retrieval query from the last two student turns, not just the latest one.
 // Most chat turns are short replies — "5", "em không biết", "dạ" — which retrieve nothing

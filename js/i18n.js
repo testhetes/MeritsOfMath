@@ -1,5 +1,5 @@
-// Lightweight i18n engine. Loads before every other script so window.I18n.t is
-// available everywhere. Static markup carries data-i18n / data-i18n-ph attributes;
+// Lightweight i18n engine. Loads before js/chat.js (the CDN libraries load earlier, in
+// <head>), so window.I18n.t is ready when the chat starts. Static markup carries data-i18n / data-i18n-ph attributes;
 // dynamic strings call window.I18n.t('key', { vars }). Language persists in
 // localStorage and defaults to Vietnamese (the product's primary audience).
 window.I18n = (function () {
