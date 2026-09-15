@@ -25,7 +25,7 @@ falls through to the next. The frontend needs no changes — it always calls `/a
 
 | Config | Provider | Default model | Notes |
 |---|---|---|---|
-| `GROQ_API_KEY` (env var) | Groq | `qwen/qwen3.6-27b` | fast primary. Qwen3 reasons by default and puts that reasoning inside `<think>` tags in the reply; the proxy sends `reasoning_effort: 'none'` for it so a child never sees that monologue |
+| `GROQ_API_KEY` (env var) | Groq | `qwen/qwen3.8-27b` | fast primary (a Groq Preview model: Groq stopped serving its predecessor `qwen/qwen3.6-27b` without notice in September 2026). Qwen3 reasons by default and puts that reasoning inside `<think>` tags in the reply; the proxy sends `reasoning_effort: 'none'` for it so a child never sees that monologue |
 | `AI` (binding, not env var) | Cloudflare Workers AI | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | runs on your own account's daily allowance, so it is the dependable second layer |
 | `OPENROUTER_API_KEY` (env var) | OpenRouter | `meta-llama/llama-3.3-70b-instruct:free` | shared free pool, often rate-limited; best-effort layer after Workers AI |
 | `GEMINI_API_KEY` (env var) | Google Gemini | `gemini-2.0-flash` | not in the default order. Setting the key alone appends Gemini after the others as a last resort; list it in `PROVIDER_ORDER` to try it earlier. Its free tier 429s in some regions |

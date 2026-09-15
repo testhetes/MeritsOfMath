@@ -56,11 +56,14 @@ const PROVIDERS = {
         url: 'https://api.groq.com/openai/v1/chat/completions',
         available: (env) => !!env.GROQ_API_KEY,
         key: (env) => env.GROQ_API_KEY,
-        // Groq retired llama-3.3-70b-versatile for free/developer tiers on 2026-08-16.
-        // Qwen 3.6 27B is its recommended replacement. It is a Preview model — the class
-        // Groq retires at short notice — so tests/test_chat_providers.py forces this
+        // Groq retired llama-3.3-70b-versatile for free/developer tiers on 2026-08-16, and its
+        // replacement qwen/qwen3.6-27b stopped being served (model_not_found) by 2026-09-15 with
+        // no deprecation notice. Qwen 3.8 27B is the Preview successor on Groq's model list, with
+        // the same free-plan limits (30 RPM, 1K RPD, 8K TPM, 200K TPD) and the same
+        // reasoning_effort "none" switch (the qwen3 regex below covers it). Preview models are
+        // the class Groq retires at short notice, so tests/test_chat_providers.py forces this
         // provider and fails the day it disappears.
-        model: (env) => env.GROQ_MODEL || 'qwen/qwen3.6-27b'
+        model: (env) => env.GROQ_MODEL || 'qwen/qwen3.8-27b'
     },
     openrouter: {
         url: 'https://openrouter.ai/api/v1/chat/completions',

@@ -344,7 +344,7 @@ Cloudflare or Groq account dashboard, trust the dashboard over this document.
 | Vectorize max vectors per index | 20,000,000 | same |
 | Vectorize max indexes per account (Free plan) | 100 | same |
 | Vectorize `topK` cap | 50 (with values/metadata returned) / 100 (without) | same |
-| Groq free-tier rate limits (`qwen/qwen3.6-27b`) | **30 RPM · 1,000 RPD · 8,000 TPM · 200,000 TPD** | <https://console.groq.com/docs/rate-limits> |
+| Groq free-tier rate limits (`qwen/qwen3.8-27b` since 2026-09-15; identical for the retired `qwen/qwen3.6-27b`) | **30 RPM · 1,000 RPD · 8,000 TPM · 200,000 TPD** | <https://console.groq.com/docs/rate-limits> |
 
 **Workers AI page caveats found:** none about beta status or missing SLA; the
 only stated behaviour is "if you exceed any one of the above limits, further
@@ -542,6 +542,15 @@ an unknown:
   to silently work around. **Revisit before real classroom use** — a paid
   Groq tier, a different/larger model, or a caching layer in front of repeat
   questions would all raise this ceiling.
+- **Update (2026-09-15):** Groq stopped serving `qwen/qwen3.6-27b`. The API
+  returns `model_not_found` and the model is gone from Groq's model list, with
+  no deprecation notice; it was a Preview model. `tests/test_chat_providers.py`
+  caught it, and until the switch the chat was answered by the Workers AI
+  fallback. By the user's decision the primary is now `qwen/qwen3.8-27b`, the
+  Preview successor on Groq's list. Its free-plan limits are identical
+  (30 RPM · 1,000 RPD · 8,000 TPM · 200,000 TPD) and it accepts the same
+  `reasoning_effort: "none"`, so the ceilings above carry over. The
+  per-message token estimate was not re-measured for Qwen 3.8.
 
 Retrieval latency (p95 ≈ 1.17–1.22 s against an 1800 ms budget) is not itself
 a gate breach but is close enough — 65–68% of budget on every run measured —
