@@ -22,7 +22,7 @@ the vector index only.
 | Embedding model | **`@cf/baai/bge-m3`** | Workers AI, pinned in `functions/api/_rag.js` |
 | Binding name | `VECTORIZE` | Pages project → Settings → Bindings |
 | Admin secret | `INGEST_SECRET` | Pages project → Settings → Environment variables |
-| Contents today | 88 vectors from 16 Markdown lessons under `content/` | — |
+| Contents today | 116 vectors from 20 Markdown lessons under `content/` | — |
 
 The dimension, the metric and the model are one decision, not three. `bge-m3`
 produces 1024-dimensional vectors, so an index created with any other
@@ -403,12 +403,13 @@ All estimates below that are not directly from a pricing page are computed
 from figures actually measured in this repository (word/character counts of
 the plan's own prompt text, and the real chunk sizes produced by
 `scripts/rag/chunker.py` against every file in `content/`) — not invented.
-Running the chunker over all 16 lesson files today gives:
+Running the chunker over all 20 lesson files (2026-09-16, after the phép nhân
+phân số unit was added) gives:
 
 ```
-16 docs, 88 chunks total (matches the index's 88 vectors)
-chunks per doc: min 3, mean 5.5, max 7
-chunk length (chars): min 46, mean 165.6, median 147, max 405 (chunker's own cap is 1200 — never reached by real content)
+20 docs, 116 chunks total (matches the index's 116 vectors)
+chunks per doc: min 3, mean 5.8, max 7
+chunk length (chars): min 46, mean 172.4, median 152, max 560 (chunker's own cap is 1200 — never reached by real content)
 ```
 
 **Token estimate for the grounded LLM system prompt**, using ~1 token per 4
@@ -468,9 +469,9 @@ per the pricing page's stated behaviour.
 
 - Formula from the pricing page: `(vectors_stored + queries_made) ×
   dimensions ≤ 30,000,000`.
-- This index: 88 vectors × 1024 dims.
-- `queries_made ≤ 30,000,000 / 1024 − 88 ≈ 29,208 − 88 ≈ 29,208` (the −88 term
-  is negligible at this scale).
+- This index: 116 vectors × 1024 dims.
+- `queries_made ≤ 30,000,000 / 1024 − 116 ≈ 29,297 − 116 ≈ 29,181` (the −116
+  term is negligible at this scale).
 - **≈29,200 grounded messages/month** (≈973/day averaged over 30 days) before
   Vectorize's free queried-dimension budget is exhausted. This comfortably
   clears the 500/day (≈15,000/month) gate — **Vectorize is not the
@@ -478,11 +479,11 @@ per the pricing page's stated behaviour.
 
 **Storage headroom:**
 
-- Stored today: 88 × 1024 = 90,112 dimensions, against a 5,000,000 free
-  budget → **1.8% used.**
-- Remaining: (5,000,000 − 90,112) / 1024 ≈ **4,794 more vectors** could be
-  stored free. At the measured 5.5 chunks/lesson average, that is roughly
-  **≈870 more lessons** — storage is not a near-term constraint at all.
+- Stored today: 116 × 1024 = 118,784 dimensions, against a 5,000,000 free
+  budget → **2.4% used.**
+- Remaining: (5,000,000 − 118,784) / 1024 ≈ **4,766 more vectors** could be
+  stored free. At the measured 5.8 chunks/lesson average, that is roughly
+  **≈820 more lessons** — storage is not a near-term constraint at all.
 
 **Groq's own capacity ceiling** (now knowable from `qwen/qwen3.6-27b`'s
 published limits — the binding constraints are **tokens per day and tokens
