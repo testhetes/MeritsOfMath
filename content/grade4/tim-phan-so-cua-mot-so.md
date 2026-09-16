@@ -36,4 +36,4 @@ Cũng có bạn lấy số đó chia cho tử số. Em nhớ: mẫu số cho bi�
 
 Tìm 3/4 của 16.
 
-Lớp em có 35 bạn, trong đó 2/5 số bạn thích bóng đá. Hỏi có bao nhiêu bạn thích bóng đá?
+Lớp em có 35 bạn, trong đó 2/5 số bạn là bạn nữ. Hỏi lớp em có bao nhiêu bạn nữ?

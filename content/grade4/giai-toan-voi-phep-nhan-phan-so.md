@@ -40,6 +40,6 @@ Có bạn quên đơn vị, hoặc viết sai đơn vị. Diện tích phải d�
 
 ## Luyện tập
 
-Một hình vuông có cạnh 3/8 m. Tính diện tích hình vuông đó.
+Một hình vuông có cạnh 3/8 m. Tính diện tích hình vuông đó bằng phép nhân phân số.
 
-Một bể có 90 l nước, đã dùng 1/3 số nước. Hỏi trong bể còn lại bao nhiêu lít nước?
+Một bể chứa 90 l nước. Người ta dùng 1/3 số nước trong bể để tưới cây. Em hãy dùng phép nhân phân số để tìm số lít nước đã dùng, rồi tính số lít nước vẫn còn trong bể.
