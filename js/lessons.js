@@ -181,33 +181,20 @@ window.Lessons = (function () {
         });
         container.appendChild(chips);
 
-        const featuredIds = grade.featured ? grade.featured.lessonIds : [];
-        if (grade.featured) {
-            const box = el('section', 'featured');
-            box.appendChild(el('p', 'featured-label', 'Chủ đề nổi bật'));
-            box.appendChild(el('h2', 'featured-title', grade.featured.title));
-            box.appendChild(el('p', 'featured-meta', featuredIds.length + ' bài · Ghi nhớ · Luyện tập'));
-            featuredIds.forEach((id, i) => {
-                const row = button(undefined, 'featured-lesson', () => onPick(id));
-                row.appendChild(el('span', 'featured-number', String(i + 1)));
-                row.appendChild(el('span', 'lesson-title', find(id).title));
-                box.appendChild(row);
-            });
-            container.appendChild(box);
-        }
+        container.appendChild(el('h2', 'home-heading', 'Các bài học lớp ' + grade.grade));
+        const list = el('div', 'lesson-list');
+        practiceFirst(grade.lessons).forEach((lesson) => {
+            const card = button(undefined, 'lesson-card', () => onPick(lesson.id));
+            card.appendChild(el('span', 'lesson-title', lesson.title));
+            card.appendChild(el('span', 'lesson-tag', hasPractice(lesson) ? 'Ghi nhớ · Luyện tập' : 'Hỏi cô'));
+            list.appendChild(card);
+        });
+        container.appendChild(list);
+    }
 
-        const others = grade.lessons.filter((lesson) => !featuredIds.includes(lesson.id));
-        if (others.length > 0) {
-            container.appendChild(el('h2', 'home-heading', grade.featured ? 'Các bài khác' : 'Các bài học lớp ' + grade.grade));
-            const list = el('div', 'lesson-list');
-            others.forEach((lesson) => {
-                const card = button(undefined, 'lesson-card', () => onPick(lesson.id));
-                card.appendChild(el('span', 'lesson-title', lesson.title));
-                card.appendChild(el('span', 'lesson-tag', hasPractice(lesson) ? 'Ghi nhớ · Luyện tập' : 'Hỏi cô'));
-                list.appendChild(card);
-            });
-            container.appendChild(list);
-        }
+    // Lessons with Ghi nhớ and practice come first; within each group, lessons.json's order.
+    function practiceFirst(lessons) {
+        return lessons.filter(hasPractice).concat(lessons.filter((lesson) => !hasPractice(lesson)));
     }
 
     function renderCard(entry, ctx) {

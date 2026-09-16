@@ -106,18 +106,11 @@ def test_lesson_fields():
             assert 8 <= len(lesson["problems"]) <= 10, lesson["id"]
 
 
-def test_featured_units_point_at_practice_lessons_in_their_grade():
+def test_no_grade_has_a_highlight_unit():
+    """Only Lớp 4 had a "Chủ đề nổi bật" unit, which the user found inconsistent (2026-09-16).
+    Every grade shows one plain lesson list instead."""
     for grade in DATA["grades"]:
-        featured = grade.get("featured")
-        if featured is None:
-            continue
-        assert featured["title"].strip()
-        ids = featured["lessonIds"]
-        assert ids and len(ids) == len(set(ids))
-        by_id = {lesson["id"]: lesson for lesson in grade["lessons"]}
-        for lesson_id in ids:
-            assert lesson_id in by_id, (grade["grade"], lesson_id)
-            assert "problems" in by_id[lesson_id], f"featured {lesson_id} has no practice"
+        assert "featured" not in grade, f"grade {grade['grade']} still has a featured unit"
 
 
 def test_problem_fields():

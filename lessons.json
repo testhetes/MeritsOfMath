@@ -27,10 +27,6 @@
     },
     {
       "grade": 4,
-      "featured": {
-        "title": "Phép nhân phân số",
-        "lessonIds": ["nhan-hai-phan-so", "tinh-chat-phep-nhan-phan-so", "tim-phan-so-cua-mot-so", "giai-toan-voi-phep-nhan-phan-so"]
-      },
       "lessons": [
         { "id": "phan-so-va-cach-doc", "title": "Phân số và cách đọc phân số" },
         { "id": "cong-tru-phan-so", "title": "Cộng và trừ phân số" },
