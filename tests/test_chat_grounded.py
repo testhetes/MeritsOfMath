@@ -3,6 +3,7 @@
 These hit the deployed site because Pages Functions have no local runtime.
 """
 
+import pytest
 import requests
 
 
@@ -96,3 +97,18 @@ def test_reply_is_vietnamese_even_if_an_old_page_asks_for_english(base_url):
     assert r.status_code == 200, r.text
     content = r.json()["choices"][0]["message"]["content"]
     assert any(ch in content.lower() for ch in "ăâđêôơư"), content
+
+
+@pytest.mark.parametrize("provider", ["groq", "workersai"])
+def test_conversation_may_start_with_a_tutor_message(base_url, provider):
+    """A lesson opens with the tutor's card, so the page sends a conversation whose first
+    message is the assistant's. Each provider in the chain must accept that."""
+    r = requests.post(f"{base_url}/api/chat?provider={provider}", json={
+        "messages": [
+            {"role": "assistant", "content": "Hôm nay mình học bài «Nhân hai phân số» nhé. Em muốn làm gì trước?\n\nBài 1: Tính \\(\\frac{2}{3} \\times \\frac{4}{5}\\)."},
+            {"role": "user", "content": "Em trả lời: 6/15 (chưa đúng)\n\nCô gợi ý cho em bài «Nhân hai phân số» với ạ: Tính \\(\\frac{2}{3} \\times \\frac{4}{5}\\). Em làm ra 6/15."},
+        ],
+        "ground": True,
+    }, timeout=90)
+    assert r.status_code == 200, r.text
+    assert r.json()["choices"][0]["message"]["content"].strip()

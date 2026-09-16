@@ -1,6 +1,7 @@
-// The whole chat app. Talks to /api/chat in grounded mode; the Socratic prompt and the
-// retrieved curriculum context are built server-side, so nothing about how the tutor is
-// instructed is visible or editable here.
+// The chat app. Talks to /api/chat in grounded mode; the Socratic prompt and the retrieved
+// curriculum context are built server-side, so nothing about how the tutor is instructed is
+// visible or editable here. The home screen's lesson picker and the lesson cards (Ghi nhớ,
+// practice) are drawn by js/lessons.js; this file owns the conversation they live in.
 window.Chat = (function () {
     const ENDPOINT = '/api/chat';
     const STORAGE_KEY = 'meritsChatHistory';
@@ -9,13 +10,15 @@ window.Chat = (function () {
     // 2026-09-16.
     const TEXT = {
         greeting: 'Chào em! Cô ở đây để giúp em tự tìm ra lời giải. Hôm nay em đang học bài gì?',
-        suggestions: ['Em không hiểu phép cộng có nhớ', 'Phân số là gì ạ?', 'Giúp em học bảng nhân'],
         thinking: 'Đang suy nghĩ...',
         error: 'Gia sư đang bận. Em thử lại sau giây lát nhé.'
     };
 
-    let history = [];              // [{ role: 'user'|'assistant', content: string }]
+    // Text entries { role: 'user'|'assistant', content } and card entries drawn by js/lessons.js,
+    // e.g. { role: 'assistant', card: 'problem', lessonId, index, attempts, solved }.
+    let history = [];
     let sending = false;
+    let ready = false;             // true once lessons.json has loaded or failed to
 
     const els = {};
 
@@ -256,9 +259,26 @@ window.Chat = (function () {
         els.messages.scrollTop = els.messages.scrollHeight;
     }
 
+    // Fills `el` with markdown and maths, sanitised, and queues it for typesetting. Tutor replies,
+    // Ghi nhớ bullets and practice questions all go through here.
+    function fillRich(el, text) {
+        if (window.DOMPurify && window.DOMPurify.sanitize) {
+            // DOMPurify sanitises marked's output against an explicit allowlist before it reaches
+            // innerHTML: marked itself does not sanitise, the child can steer the tutor's reply,
+            // and it is replayed from localStorage on every future visit, so unsanitised HTML
+            // here would run again and again. If DOMPurify is unavailable (its CDN script blocked
+            // or failed to load), fail safe: plain text, never unsanitised innerHTML.
+            el.innerHTML = window.DOMPurify.sanitize(renderMarkdown(text), SANITISE);
+        } else {
+            el.textContent = text;
+        }
+        typesetOnce(el);
+    }
+
     function appendBubble(role, text, extraClass) {
         const div = document.createElement('div');
         div.className = 'msg ' + (extraClass || (role === 'user' ? 'user' : 'ai'));
+        els.messages.appendChild(div);
         if (role === 'user') {
             // The child's own message is shown exactly as typed, never as markdown. A child
             // types `2*3*4` to multiply, and markdown turned it into 2<em>3</em>4, which read as
@@ -267,20 +287,49 @@ window.Chat = (function () {
             // keeps the child's line breaks. MathJax still typesets any maths the child typed,
             // under the same lock-down as every other bubble.
             div.textContent = text;
-        } else if (window.DOMPurify && window.DOMPurify.sanitize) {
-            // The tutor's reply is markdown. DOMPurify sanitises marked's output against an
-            // explicit allowlist before it reaches innerHTML: marked itself does not sanitise,
-            // the child can steer the reply, and it is replayed from localStorage on every
-            // future visit, so unsanitised HTML here would run again and again. If DOMPurify
-            // is unavailable (its CDN script blocked or failed to load), fail safe: render
-            // plain text rather than ever falling back to unsanitised innerHTML.
-            div.innerHTML = window.DOMPurify.sanitize(renderMarkdown(text), SANITISE);
+            typesetOnce(div);
         } else {
-            div.textContent = text;
+            fillRich(div, text);
         }
-        els.messages.appendChild(div);
-        typesetOnce(div);
         return div;
+    }
+
+    // A card entry is drawn by js/lessons.js; a text entry is a bubble.
+    function appendEntry(entry) {
+        if (entry.card === undefined) return appendBubble(entry.role, entry.content);
+        const card = window.Lessons.renderCard(entry, { fill: fillRich, act: onCardAction });
+        if (card) els.messages.appendChild(card);
+        return card;
+    }
+
+    // Saved entries are replayed from localStorage, so each is checked before it is drawn. A card
+    // must still point at a lesson (and problem) in lessons.json.
+    function isValidEntry(entry) {
+        if (!entry || typeof entry !== 'object') return false;
+        if (entry.card !== undefined) {
+            return Boolean(window.Lessons && window.Lessons.isReady() && window.Lessons.isValidCard(entry));
+        }
+        return (entry.role === 'user' || entry.role === 'assistant') && typeof entry.content === 'string';
+    }
+
+    // What the tutor sees. The API takes { role, content } text only, so cards become the
+    // sentences they show, and neighbouring messages from the same speaker are joined.
+    function toApiMessages(entries) {
+        const out = [];
+        entries.forEach((entry) => {
+            const parts = entry.card === undefined
+                ? [{ role: entry.role, content: entry.content }]
+                : window.Lessons.cardMessages(entry);
+            parts.forEach((part) => {
+                const last = out[out.length - 1];
+                if (last && last.role === part.role) {
+                    last.content += '\n\n' + part.content;
+                } else {
+                    out.push({ role: part.role, content: part.content });
+                }
+            });
+        });
+        return out;
     }
 
     function showTyping() {
@@ -300,6 +349,8 @@ window.Chat = (function () {
         if (el) el.remove();
     }
 
+    // Home when there is no conversation and lessons.json loaded; otherwise the conversation.
+    // If lessons.json could not load, this is the plain chat: greeting, ↻ button, no Home.
     function renderAll() {
         // Clear MathJax's bookkeeping for the content about to be discarded, then rebuild.
         // Each bubble typesets itself through appendBubble, the same as every other path --
@@ -307,30 +358,62 @@ window.Chat = (function () {
         // for why that used to duplicate formulas).
         typesetClear(els.messages);
         els.messages.innerHTML = '';
-        if (history.length === 0) {
+        const lessonsReady = Boolean(window.Lessons && window.Lessons.isReady());
+        const atHome = lessonsReady && history.length === 0;
+        els.home.hidden = !atHome;
+        els.messages.hidden = atHome;
+        els.backBtn.hidden = !lessonsReady || atHome;
+        els.clearBtn.hidden = lessonsReady;
+        if (atHome) {
+            window.Lessons.renderHome(els.home, startLesson);
+        } else if (history.length === 0) {
             appendBubble('assistant', TEXT.greeting);
         } else {
-            history.forEach((m) => appendBubble(m.role, m.content));
+            history.forEach(appendEntry);
         }
-        renderSuggestions();
         scrollToBottom();
     }
 
-    function renderSuggestions() {
-        els.suggestions.innerHTML = '';
-        if (history.length > 0) return;   // only offer openers on an empty conversation
-        TEXT.suggestions.forEach((text) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.textContent = text;
-            btn.addEventListener('click', () => send(text));
-            els.suggestions.appendChild(btn);
-        });
+    function startLesson(lessonId) {
+        if (sending) return;
+        history = [{ role: 'assistant', card: 'lesson', lessonId: lessonId }];
+        save();
+        renderAll();
+        if (!window.Lessons.hasPractice(window.Lessons.find(lessonId))) els.input.focus();
+    }
+
+    // Adds a card under the conversation. Not while a reply is on its way: the reply would land
+    // under the new card, answering something the child did not just ask.
+    function pushEntry(entry) {
+        if (sending) return;
+        history.push(entry);
+        save();
+        const card = appendEntry(entry);
+        const answer = card && card.querySelector('.answer-input');
+        if (answer) answer.focus();
+        scrollToBottom();
+    }
+
+    function onCardAction(action, entry) {
+        const lessonId = entry.lessonId;
+        if (action === 'ghiNho') {
+            pushEntry({ role: 'assistant', card: 'ghiNho', lessonId: lessonId });
+        } else if (action === 'practice') {
+            pushEntry({ role: 'assistant', card: 'problem', lessonId: lessonId, index: 0, attempts: [], solved: false });
+        } else if (action === 'next') {
+            pushEntry({ role: 'assistant', card: 'problem', lessonId: lessonId, index: entry.index + 1, attempts: [], solved: false });
+        } else if (action === 'attempt') {
+            save();   // the card recorded the attempt on `entry`, which is the object in history
+        } else if (action === 'hint') {
+            send(window.Lessons.hintMessage(entry));
+        } else if (action === 'home') {
+            clearConversation();
+        }
     }
 
     async function send(text) {
         const message = (text || '').trim();
-        if (!message || sending) return;
+        if (!message || sending || !ready) return;
 
         sending = true;
         els.sendBtn.disabled = true;
@@ -338,8 +421,11 @@ window.Chat = (function () {
         autoGrow();
 
         history.push({ role: 'user', content: message });
-        appendBubble('user', message);   // typesets itself; see typesetOnce
-        els.suggestions.innerHTML = '';
+        if (els.messages.hidden) {
+            renderAll();                     // leaving Home: draws the conversation, this message included
+        } else {
+            appendBubble('user', message);   // typesets itself; see typesetOnce
+        }
         scrollToBottom();
         showTyping();
 
@@ -348,7 +434,7 @@ window.Chat = (function () {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: history.slice(-MAX_TURNS * 2),
+                    messages: toApiMessages(history.slice(-MAX_TURNS * 2)),
                     ground: true,
                     max_tokens: 220
                 })
@@ -391,6 +477,7 @@ window.Chat = (function () {
     }
 
     function clearConversation() {
+        if (sending) return;   // a reply on its way would otherwise land in the next conversation
         history = [];
         save();
         renderAll();
@@ -398,15 +485,15 @@ window.Chat = (function () {
 
     function init() {
         clearRetiredStorage();   // first, before load() reads the conversation (see RETIRED_KEYS)
+        els.home = document.getElementById('home');
         els.messages = document.getElementById('messages');
-        els.suggestions = document.getElementById('suggestions');
         els.input = document.getElementById('input');
         els.sendBtn = document.getElementById('send-btn');
         els.composer = document.getElementById('composer');
         els.clearBtn = document.getElementById('clear-btn');
+        els.backBtn = document.getElementById('back-btn');
 
         load();
-        renderAll();
 
         els.composer.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -426,6 +513,17 @@ window.Chat = (function () {
         });
 
         els.clearBtn.addEventListener('click', clearConversation);
+        els.backBtn.addEventListener('click', clearConversation);
+
+        // Cards need lessons.json, so nothing is drawn, and nothing can be sent, until it has
+        // loaded or failed to.
+        const lessonsLoaded = window.Lessons ? window.Lessons.load() : Promise.resolve(false);
+        lessonsLoaded.then(() => {
+            history = history.filter(isValidEntry);
+            ready = true;
+            els.sendBtn.disabled = false;
+            renderAll();
+        });
     }
 
     document.addEventListener('DOMContentLoaded', init);

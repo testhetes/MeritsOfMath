@@ -15,6 +15,10 @@
 
 * { box-sizing: border-box; }
 
+/* The hidden attribute must win over the display rules below (.home, .messages and
+   .card-actions all set display). */
+[hidden] { display: none !important; }
+
 body {
     margin: 0;
     font-family: 'Outfit', system-ui, -apple-system, sans-serif;
@@ -92,16 +96,6 @@ body {
 .typing span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes blink { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
 
-.suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 10px; }
-.suggestions button {
-    background: var(--bg-elevated); color: var(--text-secondary);
-    -webkit-text-fill-color: currentColor;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: var(--radius-full); padding: 7px 14px;
-    font: inherit; font-size: 0.82rem; cursor: pointer;
-}
-.suggestions button:hover { color: var(--accent-hover); border-color: var(--accent-primary); }
-
 .composer {
     flex: 0 0 auto;
     display: flex; gap: 10px; align-items: flex-end;
@@ -127,7 +121,114 @@ body {
 }
 .composer button:disabled { opacity: 0.5; cursor: default; }
 
+/* ---- Home: grade chips, featured unit, lessons ---- */
+.home {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.home-greeting { margin: 0; font-size: 1.05rem; color: var(--text-secondary); }
+
+.grade-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.grade-chip {
+    --chip: var(--accent-primary);
+    min-height: 44px; padding: 0 18px;
+    border: 2px solid var(--chip); border-radius: var(--radius-full);
+    background: transparent; color: var(--chip); -webkit-text-fill-color: currentColor;
+    font: inherit; font-weight: 600; cursor: pointer;
+}
+.grade-chip[aria-pressed="true"] { background: var(--chip); color: var(--bg-main); }
+.grade-chip.grade-1 { --chip: #f472b6; }
+.grade-chip.grade-2 { --chip: #fb923c; }
+.grade-chip.grade-3 { --chip: #facc15; }
+.grade-chip.grade-4 { --chip: #4ade80; }
+.grade-chip.grade-5 { --chip: #38bdf8; }
+
+.featured {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.22), rgba(74, 222, 128, 0.10));
+    border: 1px solid rgba(129, 140, 248, 0.45);
+    border-radius: var(--radius-md);
+}
+.featured-label { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-hover); }
+.featured-title { margin: 0; font-size: 1.3rem; }
+.featured-meta { margin: 0 0 4px; font-size: 0.85rem; color: var(--text-secondary); }
+.featured-lesson {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 48px; padding: 8px 12px;
+    border: 0; border-radius: var(--radius-sm);
+    background: rgba(26, 27, 46, 0.55); color: var(--text-primary); -webkit-text-fill-color: currentColor;
+    font: inherit; text-align: left; cursor: pointer;
+}
+.featured-lesson:hover { background: rgba(26, 27, 46, 0.85); }
+.featured-number {
+    flex: 0 0 auto; display: grid; place-items: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-primary); color: var(--bg-main); -webkit-text-fill-color: currentColor;
+    font-size: 0.85rem; font-weight: 700;
+}
+
+.home-heading { margin: 6px 0 0; font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); }
+.lesson-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.lesson-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    min-height: 64px; padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid var(--accent-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary); color: var(--text-primary); -webkit-text-fill-color: currentColor;
+    font: inherit; text-align: left; cursor: pointer;
+}
+.lesson-card:hover { border-color: var(--accent-primary); }
+.lesson-tag { font-size: 0.75rem; color: var(--text-tertiary); }
+
+/* ---- Lesson cards inside the conversation ---- */
+.msg.card {
+    width: 100%; max-width: min(560px, 92%);
+    display: flex; flex-direction: column; gap: 10px;
+    border: 1px solid rgba(129, 140, 248, 0.35);
+}
+.msg.card.solved { border-color: rgba(74, 222, 128, 0.6); }
+.card-text { margin: 0; }
+.card-label { margin: 0; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-hover); }
+.card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.card-btn {
+    min-height: 44px; padding: 0 16px;
+    border: 1px solid rgba(129, 140, 248, 0.5); border-radius: var(--radius-sm);
+    background: var(--bg-elevated); color: var(--text-primary); -webkit-text-fill-color: currentColor;
+    font: inherit; font-weight: 600; cursor: pointer;
+}
+.card-btn.primary {
+    background: linear-gradient(135deg, var(--accent-primary), #6366f1);
+    border-color: transparent; color: #fff; -webkit-text-fill-color: #fff;
+}
+.card-btn.highlight { border-color: #facc15; box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.35); }
+.card-btn:disabled { opacity: 0.5; cursor: default; }
+
+.ghinho-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+.answer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.answer-input {
+    flex: 1 1 120px; min-width: 0; min-height: 44px; padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-sm);
+    background: var(--bg-main); color: var(--text-primary);
+    font: inherit; font-size: 1.1rem;
+}
+.answer-input:focus { outline: none; border-color: var(--accent-primary); }
+.answer-input:disabled { opacity: 0.8; }
+.answer-unit { color: var(--text-secondary); }
+
+.feedback { margin: 0; min-height: 1.4em; font-weight: 600; }
+.feedback.correct { color: #4ade80; }
+.feedback.not-simplest { color: #facc15; }
+.feedback.wrong, .feedback.invalid { color: #fca5a5; }
+.finish { margin: 0 0 8px; font-weight: 600; color: #4ade80; }
+
 @media (max-width: 600px) {
     .msg { max-width: 88%; }
     .messages { padding: 14px; }
+    .home { padding: 14px; }
 }

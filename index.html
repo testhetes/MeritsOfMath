@@ -75,21 +75,22 @@
 </head>
 <body>
     <header class="chat-header">
+        <button type="button" class="icon-btn" id="back-btn" title="Về trang chủ" aria-label="Về trang chủ" hidden>&#8592;</button>
         <div>
             <h1>Merits of Math</h1>
             <p class="sub">Gia sư toán của em</p>
         </div>
         <div class="spacer"></div>
-        <button type="button" class="icon-btn" id="clear-btn" title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới">&#8635;</button>
+        <button type="button" class="icon-btn" id="clear-btn" title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới" hidden>&#8635;</button>
     </header>
 
-    <div class="messages" id="messages"></div>
+    <section class="home" id="home" hidden></section>
 
-    <div class="suggestions" id="suggestions"></div>
+    <div class="messages" id="messages" hidden></div>
 
     <form class="composer" id="composer">
         <textarea id="input" rows="1" placeholder="Hỏi cô về toán..." aria-label="Hỏi cô về toán"></textarea>
-        <button type="submit" id="send-btn">Gửi</button>
+        <button type="submit" id="send-btn" disabled>Gửi</button>
     </form>
 
     <script src="js/lessons.js"></script>
