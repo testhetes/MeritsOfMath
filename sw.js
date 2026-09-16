@@ -24,6 +24,8 @@ const APP_SHELL = [
     './chat.css',
     './manifest.webmanifest',
     './icons/icon.svg',
+    './lessons.json',
+    './js/lessons.js',
     './js/chat.js'
 ];
 
