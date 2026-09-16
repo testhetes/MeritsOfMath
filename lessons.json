@@ -1,0 +1,46 @@
+{
+  "defaultGrade": 4,
+  "grades": [
+    {
+      "grade": 1,
+      "lessons": [
+        { "id": "phep-cong-trong-pham-vi-10", "title": "Phép cộng trong phạm vi 10" },
+        { "id": "phep-tru-trong-pham-vi-10", "title": "Phép trừ trong phạm vi 10" },
+        { "id": "cac-so-den-100", "title": "Các số đến 100" }
+      ]
+    },
+    {
+      "grade": 2,
+      "lessons": [
+        { "id": "phep-cong-co-nho-trong-pham-vi-100", "title": "Phép cộng có nhớ trong phạm vi 100" },
+        { "id": "phep-tru-co-nho-trong-pham-vi-100", "title": "Phép trừ có nhớ trong phạm vi 100" },
+        { "id": "bang-nhan-2-3-4-5", "title": "Bảng nhân 2, 3, 4, 5" }
+      ]
+    },
+    {
+      "grade": 3,
+      "lessons": [
+        { "id": "bang-nhan-chia-6-7-8-9", "title": "Bảng nhân và bảng chia 6, 7, 8, 9" },
+        { "id": "chia-het-va-chia-co-du", "title": "Phép chia hết và phép chia có dư" },
+        { "id": "chu-vi-hinh-chu-nhat-hinh-vuong", "title": "Chu vi hình chữ nhật và hình vuông" }
+      ]
+    },
+    {
+      "grade": 4,
+      "lessons": [
+        { "id": "phan-so-va-cach-doc", "title": "Phân số và cách đọc phân số" },
+        { "id": "cong-tru-phan-so", "title": "Cộng và trừ phân số" },
+        { "id": "dau-hieu-chia-het", "title": "Dấu hiệu chia hết cho 2, 3, 5, 9" }
+      ]
+    },
+    {
+      "grade": 5,
+      "lessons": [
+        { "id": "so-thap-phan", "title": "Số thập phân" },
+        { "id": "phep-tinh-voi-so-thap-phan", "title": "Cộng, trừ, nhân, chia số thập phân" },
+        { "id": "ti-so-phan-tram", "title": "Tỉ số phần trăm" },
+        { "id": "dien-tich-va-the-tich", "title": "Diện tích và thể tích" }
+      ]
+    }
+  ]
+}
