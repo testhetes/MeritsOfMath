@@ -37,6 +37,50 @@ def test_english_mode_is_gone():
     assert "body.lang" not in server and "lang === 'en'" not in server
 
 
+DEEP_TONES = ("yellow", "coral", "blue", "green", "orange", "lavender", "cyan")
+
+
+def _root_colours():
+    css = (ROOT / "chat.css").read_text(encoding="utf-8")
+    block = re.search(r":root\s*\{(.*?)\}", css, re.S)
+    assert block, ":root block not found in chat.css"
+    return dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\s*;", block.group(1)))
+
+
+def _luminance(hex_colour):
+    channels = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def _contrast(a, b):
+    high, low = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+def test_colour_tokens_meet_contrast_minimums():
+    """The user asked for a dark theme that is easy on the eyes, with white text that stands out
+    on filled controls (2026-09-16). WCAG AA: 4.5:1 for text, 3:1 for outlines."""
+    colours = _root_colours()
+    for tone in DEEP_TONES:
+        ratio = _contrast(colours["on-fill"], colours[tone])
+        assert ratio >= 4.5, f"white on --{tone} is {ratio:.2f}:1"
+        assert f"{tone}-bright" in colours, f"--{tone}-bright is missing"
+    for surface in ("bg", "surface", "surface-2"):
+        ratio = _contrast(colours["text"], colours[surface])
+        assert ratio >= 4.5, f"--text on --{surface} is {ratio:.2f}:1"
+    assert _contrast(colours["placeholder"], colours["surface-2"]) >= 4.5
+    assert _contrast(colours["ink"], colours["bg"]) >= 3
+
+
+def test_fonts_support_vietnamese():
+    """Outfit has no Vietnamese subset, so diacritics fell back to another font."""
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "Outfit" not in html
+    for family in ("Be+Vietnam+Pro", "Space+Grotesk", "Inter", "Space+Mono"):
+        assert family in html, f"{family} is not loaded"
+
+
 def test_layout_follows_the_on_screen_keyboard():
     """Chrome keeps 100dvh at full height when the phone keyboard opens, so the chat box sat under
     the keyboard (reported 2026-09-16). index.html must ask Chrome to resize the page, and the app's

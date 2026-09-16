@@ -145,6 +145,39 @@ window.Lessons = (function () {
         return node;
     }
 
+    function reducedMotion() {
+        return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    // Restarts a one-off animation class (a sticker's wiggle, the answer box's shake).
+    function replayAnimation(node, className) {
+        if (reducedMotion()) return;
+        node.classList.remove(className);
+        void node.offsetWidth;   // reflow, so re-adding the class starts the animation again
+        node.classList.add(className);
+    }
+
+    // A burst of small bright squares from the answer box when an answer is right.
+    function celebrate(card, from) {
+        if (reducedMotion()) return;
+        const originX = from.offsetLeft + from.offsetWidth / 2;
+        const originY = from.offsetTop + from.offsetHeight / 2;
+        for (let i = 0; i < 16; i++) {
+            const bit = el('span', 'confetti-bit c' + (i % 7));
+            const angle = (Math.PI * 2 * i) / 16 + Math.random() * 0.4;
+            const distance = 50 + Math.random() * 60;
+            bit.style.left = originX + 'px';
+            bit.style.top = originY + 'px';
+            bit.style.setProperty('--dx', Math.round(Math.cos(angle) * distance) + 'px');
+            bit.style.setProperty('--dy', Math.round(Math.sin(angle) * distance) + 'px');
+            card.appendChild(bit);
+            setTimeout(() => bit.remove(), 950);
+        }
+    }
+
+    const GRADE_TONES = { 1: 'coral', 2: 'orange', 3: 'yellow', 4: 'green', 5: 'blue' };
+    const STICKERS = ['½', '×', '÷'];
+
     function currentGrade() {
         let wanted = data.defaultGrade;
         try {
@@ -168,11 +201,23 @@ window.Lessons = (function () {
         container.textContent = '';
         const grade = currentGrade();
 
-        container.appendChild(el('p', 'home-greeting', 'Chào em! Hôm nay em muốn học bài nào?'));
+        const top = el('div', 'home-top');
+        top.appendChild(el('p', 'home-greeting', 'Chào em! Hôm nay em muốn học bài nào?'));
+        const stickers = el('div', 'stickers');
+        stickers.setAttribute('aria-hidden', 'true');
+        STICKERS.forEach((symbol) => {
+            const sticker = el('span', 'sticker', symbol);
+            sticker.addEventListener('click', () => replayAnimation(sticker, 'wiggle'));
+            sticker.addEventListener('animationend', () => sticker.classList.remove('wiggle'));
+            stickers.appendChild(sticker);
+        });
+        top.appendChild(stickers);
+        container.appendChild(top);
 
         const chips = el('div', 'grade-chips');
         data.grades.forEach((g) => {
-            const chip = button('Lớp ' + g.grade, 'grade-chip grade-' + g.grade, () => {
+            const tone = GRADE_TONES[g.grade] || 'neutral';
+            const chip = button('Lớp ' + g.grade, 'btn grade-chip tone-' + tone, () => {
                 saveGrade(g.grade);
                 renderHome(container, onPick);
             });
@@ -184,9 +229,11 @@ window.Lessons = (function () {
         container.appendChild(el('h2', 'home-heading', 'Các bài học lớp ' + grade.grade));
         const list = el('div', 'lesson-list');
         practiceFirst(grade.lessons).forEach((lesson) => {
-            const card = button(undefined, 'lesson-card', () => onPick(lesson.id));
+            const card = button(undefined, 'btn lesson-card', () => onPick(lesson.id));
             card.appendChild(el('span', 'lesson-title', lesson.title));
-            card.appendChild(el('span', 'lesson-tag', hasPractice(lesson) ? 'Ghi nhớ · Luyện tập' : 'Hỏi cô'));
+            card.appendChild(hasPractice(lesson)
+                ? el('span', 'tag tone-orange', 'Ghi nhớ · Luyện tập')
+                : el('span', 'tag tone-blue', 'Hỏi cô'));
             list.appendChild(card);
         });
         container.appendChild(list);
@@ -211,8 +258,8 @@ window.Lessons = (function () {
         card.appendChild(el('p', 'card-text', introText(lesson)));
         if (hasPractice(lesson)) {
             const actions = el('div', 'card-actions');
-            actions.appendChild(button('Những kiến thức phải nhớ', 'card-btn primary', () => ctx.act('ghiNho', entry)));
-            actions.appendChild(button('Cho em bài để luyện tập', 'card-btn primary', () => ctx.act('practice', entry)));
+            actions.appendChild(button('Những kiến thức phải nhớ', 'btn card-btn tone-blue', () => ctx.act('ghiNho', entry)));
+            actions.appendChild(button('Cho em bài để luyện tập', 'btn card-btn tone-orange', () => ctx.act('practice', entry)));
             card.appendChild(actions);
         }
         return card;
@@ -220,7 +267,7 @@ window.Lessons = (function () {
 
     function ghiNhoCard(lesson, entry, ctx) {
         const card = el('div', 'msg ai card ghinho-card');
-        card.appendChild(el('p', 'card-label', 'Ghi nhớ · ' + lesson.title));
+        card.appendChild(el('p', 'tag tone-blue', 'Ghi nhớ · ' + lesson.title));
         const list = el('ul', 'ghinho-list');
         lesson.ghiNho.forEach((point) => {
             const item = el('li');
@@ -229,7 +276,7 @@ window.Lessons = (function () {
         });
         card.appendChild(list);
         const actions = el('div', 'card-actions');
-        actions.appendChild(button('Cho em bài để luyện tập', 'card-btn primary', () => ctx.act('practice', entry)));
+        actions.appendChild(button('Cho em bài để luyện tập', 'btn card-btn tone-orange', () => ctx.act('practice', entry)));
         card.appendChild(actions);
         return card;
     }
@@ -246,7 +293,7 @@ window.Lessons = (function () {
         const total = lesson.problems.length;
         const card = el('div', 'msg ai card problem-card');
 
-        card.appendChild(el('p', 'card-label', 'Bài ' + (entry.index + 1) + '/' + total));
+        card.appendChild(el('p', 'tag tone-orange', 'Bài ' + (entry.index + 1) + '/' + total));
         const question = el('div', 'card-text');
         ctx.fill(question, problem.question);
         card.appendChild(question);
@@ -260,7 +307,7 @@ window.Lessons = (function () {
         input.setAttribute('aria-label', 'Câu trả lời của em');
         form.appendChild(input);
         if (problem.unit) form.appendChild(el('span', 'answer-unit', problem.unit));
-        const check = el('button', 'card-btn primary', 'Kiểm tra');
+        const check = el('button', 'btn card-btn tone-green', 'Kiểm tra');
         check.type = 'submit';
         form.appendChild(check);
         card.appendChild(form);
@@ -270,7 +317,7 @@ window.Lessons = (function () {
         card.appendChild(feedback);
 
         const actions = el('div', 'card-actions');
-        const hint = button('Cô gợi ý', 'card-btn hint', () => ctx.act('hint', entry));
+        const hint = button('Cô gợi ý', 'btn card-btn tone-lavender hint', () => ctx.act('hint', entry));
         actions.appendChild(hint);
         card.appendChild(actions);
 
@@ -278,10 +325,10 @@ window.Lessons = (function () {
         const doneActions = el('div', 'card-actions');
         if (entry.index === total - 1) {
             done.appendChild(el('p', 'finish', 'Em đã làm hết ' + total + ' bài rồi. Giỏi quá!'));
-            doneActions.appendChild(button('Những kiến thức phải nhớ', 'card-btn', () => ctx.act('ghiNho', entry)));
-            doneActions.appendChild(button('Chọn bài khác', 'card-btn primary', () => ctx.act('home', entry)));
+            doneActions.appendChild(button('Những kiến thức phải nhớ', 'btn card-btn tone-blue', () => ctx.act('ghiNho', entry)));
+            doneActions.appendChild(button('Chọn bài khác', 'btn card-btn tone-neutral', () => ctx.act('home', entry)));
         } else {
-            doneActions.appendChild(button('Bài tiếp theo', 'card-btn primary', () => ctx.act('next', entry)));
+            doneActions.appendChild(button('Bài tiếp theo', 'btn card-btn tone-cyan', () => ctx.act('next', entry)));
         }
         done.appendChild(doneActions);
         card.appendChild(done);
@@ -307,7 +354,10 @@ window.Lessons = (function () {
                 ctx.act('attempt', entry);
             }
             show(result);
+            if (result === 'correct') celebrate(card, input);
+            if (result === 'wrong') replayAnimation(input, 'shake');
         });
+        input.addEventListener('animationend', () => input.classList.remove('shake'));
 
         // A saved card comes back with its last attempt in the box and that attempt's result.
         const last = entry.attempts[entry.attempts.length - 1];

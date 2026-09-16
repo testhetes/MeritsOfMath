@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Merits of Math</title>
     <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#1a1b2e">
+    <meta name="theme-color" content="#14131A">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
     <link rel="apple-touch-icon" href="icons/icon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@800&family=Inter:wght@400;600&family=Space+Grotesk:wght@700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
     <script>
         // MathJax 3 recognises only \( \) for inline maths by default. Measured on the live
         // site, 2026-09-13: `$\frac{1}{2}$` rendered 0 formulas. The tutor model emitted both
@@ -75,13 +75,14 @@
 </head>
 <body>
     <header class="chat-header">
-        <button type="button" class="icon-btn" id="back-btn" title="Về trang chủ" aria-label="Về trang chủ" hidden>&#8592;</button>
+        <button type="button" class="btn tone-neutral icon-btn" id="back-btn" title="Về trang chủ" aria-label="Về trang chủ" hidden>&#8592;</button>
+        <div class="logo" aria-hidden="true">M</div>
         <div>
             <h1>Merits of Math</h1>
             <p class="sub">Gia sư toán của em</p>
         </div>
         <div class="spacer"></div>
-        <button type="button" class="icon-btn" id="clear-btn" title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới" hidden>&#8635;</button>
+        <button type="button" class="btn tone-neutral icon-btn" id="clear-btn" title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới" hidden>&#8635;</button>
     </header>
 
     <section class="home" id="home" hidden></section>
@@ -90,7 +91,7 @@
 
     <form class="composer" id="composer">
         <textarea id="input" rows="1" placeholder="Hỏi cô về toán..." aria-label="Hỏi cô về toán"></textarea>
-        <button type="submit" id="send-btn" disabled>Gửi</button>
+        <button type="submit" class="btn tone-yellow send-btn" id="send-btn" disabled>Gửi</button>
     </form>
 
     <script src="js/lessons.js"></script>
