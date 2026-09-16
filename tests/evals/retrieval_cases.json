@@ -62,5 +62,21 @@
   {
     "query": "Con em hỏi vì sao lúc trừ 61 cho 39, hàng đơn vị không đủ trừ thì phải vay thêm 10, cô giải thích cách đó thế nào cho dễ hiểu?",
     "expect_doc_id": "phep-tru-co-nho-trong-pham-vi-100"
+  },
+  {
+    "query": "Con em hỏi 3 phần 4 nhân với 2 phần 5 thì tính thế nào, tử với mẫu làm gì ạ?",
+    "expect_doc_id": "nhan-hai-phan-so"
+  },
+  {
+    "query": "Đổi thứ tự các phân số khi làm phép nhân thì kết quả có khác đi không ạ?",
+    "expect_doc_id": "tinh-chat-phep-nhan-phan-so"
+  },
+  {
+    "query": "Nhà em có 24 cái kẹo, em được ăn 3 phần 8 số kẹo thì là mấy cái?",
+    "expect_doc_id": "tim-phan-so-cua-mot-so"
+  },
+  {
+    "query": "Đề toán kể chuyện về phân số thì em làm sao biết phải chọn phép tính nào, lại hay quên ghi đơn vị?",
+    "expect_doc_id": "giai-toan-voi-phep-nhan-phan-so"
   }
 ]
