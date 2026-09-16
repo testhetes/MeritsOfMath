@@ -305,6 +305,7 @@ window.Lessons = (function () {
         input.autocomplete = 'off';
         input.maxLength = 20;
         input.setAttribute('aria-label', 'Câu trả lời của em');
+        if (window.MathPad) window.MathPad.attachAnswer(input);
         form.appendChild(input);
         if (problem.unit) form.appendChild(el('span', 'answer-unit', problem.unit));
         const check = el('button', 'btn card-btn tone-green', 'Kiểm tra');
@@ -356,6 +357,7 @@ window.Lessons = (function () {
             show(result);
             if (result === 'correct') celebrate(card, input);
             if (result === 'wrong') replayAnimation(input, 'shake');
+            if (entry.solved && window.MathPad) window.MathPad.release(input);
         });
         input.addEventListener('animationend', () => input.classList.remove('shake'));
 

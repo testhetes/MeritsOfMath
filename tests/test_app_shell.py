@@ -93,3 +93,11 @@ def test_layout_follows_the_on_screen_keyboard():
     assert "height: var(--app-height, 100dvh);" in css
     chat = (ROOT / "js" / "chat.js").read_text(encoding="utf-8")
     assert "visualViewport" in chat and "--app-height" in chat
+
+
+def test_maths_keypad_is_wired_into_the_page():
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert 'id="mathpad"' in html and 'id="mathpad-toggle"' in html
+    scripts = re.findall(r'<script src="(js/[a-z]+\.js)"></script>', html)
+    assert scripts == ["js/mathpad.js", "js/lessons.js", "js/chat.js"], scripts
+    assert "mathpad.js" in "".join(_app_shell())

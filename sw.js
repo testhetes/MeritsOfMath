@@ -26,6 +26,7 @@ const APP_SHELL = [
     './icons/icon.svg',
     './lessons.json',
     './js/lessons.js',
+    './js/mathpad.js',
     './js/chat.js'
 ];
 

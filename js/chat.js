@@ -522,6 +522,15 @@ window.Chat = (function () {
         els.clearBtn = document.getElementById('clear-btn');
         els.backBtn = document.getElementById('back-btn');
         fitToVisibleViewport();
+        if (window.MathPad) {
+            window.MathPad.init({
+                pad: document.getElementById('mathpad'),
+                toggle: document.getElementById('mathpad-toggle'),
+                input: els.input,
+                composer: els.composer,
+                onChatOpen: scrollToBottom
+            });
+        }
 
         load();
 

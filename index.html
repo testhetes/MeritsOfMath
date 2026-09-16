@@ -90,10 +90,13 @@
     <div class="messages" id="messages" hidden></div>
 
     <form class="composer" id="composer">
+        <button type="button" class="btn tone-lavender mathpad-toggle" id="mathpad-toggle" aria-pressed="false" aria-label="Bàn phím toán" hidden>123<br>×÷</button>
         <textarea id="input" rows="1" placeholder="Hỏi cô về toán..." aria-label="Hỏi cô về toán"></textarea>
         <button type="submit" class="btn tone-yellow send-btn" id="send-btn" disabled>Gửi</button>
     </form>
+    <div class="mathpad" id="mathpad" hidden></div>
 
+    <script src="js/mathpad.js"></script>
     <script src="js/lessons.js"></script>
     <script src="js/chat.js"></script>
     <script>
