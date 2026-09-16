@@ -15,7 +15,7 @@
 //
 // Bump CACHE only to purge everything, for example when files are deleted.
 
-const CACHE = 'merits-v5';
+const CACHE = 'merits-v6';
 
 // './index.html' is deliberately absent: Cloudflare Pages answers /index.html with a 308
 // redirect to /, and './' already covers the page.
@@ -24,7 +24,6 @@ const APP_SHELL = [
     './chat.css',
     './manifest.webmanifest',
     './icons/icon.svg',
-    './js/i18n.js',
     './js/chat.js'
 ];
 

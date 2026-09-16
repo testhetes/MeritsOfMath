@@ -76,15 +76,11 @@
 <body>
     <header class="chat-header">
         <div>
-            <h1 data-i18n="chat.title">Merits of Math</h1>
-            <p class="sub" data-i18n="chat.subtitle">Gia sư toán của em</p>
+            <h1>Merits of Math</h1>
+            <p class="sub">Gia sư toán của em</p>
         </div>
         <div class="spacer"></div>
-        <div class="lang-toggle">
-            <button type="button" data-lang-btn="vi">VI</button>
-            <button type="button" data-lang-btn="en">EN</button>
-        </div>
-        <button type="button" class="icon-btn" id="clear-btn" title="New conversation">&#8635;</button>
+        <button type="button" class="icon-btn" id="clear-btn" title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới">&#8635;</button>
     </header>
 
     <div class="messages" id="messages"></div>
@@ -92,11 +88,10 @@
     <div class="suggestions" id="suggestions"></div>
 
     <form class="composer" id="composer">
-        <textarea id="input" rows="1" data-i18n-ph="chat.placeholder" placeholder="Hỏi cô về toán..."></textarea>
-        <button type="submit" id="send-btn" data-i18n="chat.send">Gửi</button>
+        <textarea id="input" rows="1" placeholder="Hỏi cô về toán..." aria-label="Hỏi cô về toán"></textarea>
+        <button type="submit" id="send-btn">Gửi</button>
     </form>
 
-    <script src="js/i18n.js"></script>
     <script src="js/chat.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

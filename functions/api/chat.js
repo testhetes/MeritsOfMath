@@ -1,9 +1,11 @@
 // Cloudflare Pages Function — serves at /api/chat
 //
 // Holds AI provider keys server-side so the browser never sees them. The chat frontend
-// (js/chat.js) POSTs an OpenAI-style { messages, max_tokens } body plus `ground` and `lang`;
+// (js/chat.js) POSTs an OpenAI-style { messages, max_tokens } body plus `ground`;
 // this function injects the right key, pins the model, and forwards it. With `ground: true`
 // it first retrieves curriculum context and builds the Socratic system prompt server-side.
+// The tutor always speaks Vietnamese. A `lang` field sent by a page cached before 2026-09-16
+// is ignored.
 //
 // MULTI-PROVIDER WITH FALLBACK: it tries providers in order and, if one is rate-limited
 // (429) or erroring (5xx / network), falls through to the next. Only providers whose key
@@ -138,7 +140,7 @@ export async function onRequestPost({ request, env }) {
         const { chunks, error } = await retrieveContext(env, buildRetrievalQuery(messages));
         ragChunkCount = chunks.length;
         ragError = error;
-        const systemPrompt = buildSocraticPrompt(chunks, body.lang);
+        const systemPrompt = buildSocraticPrompt(chunks);
         messages = [{ role: 'system', content: systemPrompt }]
             .concat(messages.filter((m) => m && m.role !== 'system'));
     }
@@ -321,12 +323,10 @@ async function retrieveContext(env, query) {
 // The tutor's character. Built server-side so the "never reveal the answer" rule and the
 // retrieved reference material stay out of the browser, where a curious student could
 // read or edit them.
-function buildSocraticPrompt(chunks, lang) {
-    const language = lang === 'en' ? 'English' : 'Vietnamese';
-
+function buildSocraticPrompt(chunks) {
     const lines = [
         'You are a warm, patient maths tutor for Vietnamese primary-school children (Grades 1 to 5).',
-        `LANGUAGE: Write every word of your reply in ${language}. Keep numbers as digits.`,
+        'LANGUAGE: Write every word of your reply in Vietnamese. Keep numbers as digits.',
         '',
         'HOW YOU TEACH:',
         '- You never state the final answer. Not when asked directly, not when the student says they give up, not "just this once".',
@@ -337,15 +337,12 @@ function buildSocraticPrompt(chunks, lang) {
         '- Use everyday things: sweets, apples, marbles, fingers, steps.',
         '- If the student is stuck twice on the same step, make the step smaller. Do not answer it for them.',
         '- Keep replies under about 60 words.',
-        '- Write any maths in LaTeX between \\( and \\). Never use $ signs for maths.'
+        '- Write any maths in LaTeX between \\( and \\). Never use $ signs for maths.',
+        // Vietnamese teacher-to-pupil register. Without an explicit rule, Qwen drifted between
+        // "em" (correct for a teacher speaking to a child) and "bạn" (peer register) across
+        // consecutive replies measured on 2026-09-13.
+        '- Speak like a Vietnamese primary-school teacher: call the student "em" and refer to yourself as "cô". Never call the student "bạn".'
     ];
-
-    // Vietnamese teacher-to-pupil register. Without an explicit rule, Qwen drifted between
-    // "em" (correct for a teacher speaking to a child) and "bạn" (peer register) across
-    // consecutive replies measured on 2026-09-13.
-    if (lang !== 'en') {
-        lines.push('- Speak like a Vietnamese primary-school teacher: call the student "em" and refer to yourself as "cô". Never call the student "bạn".');
-    }
 
     // Maths delimiters matter for rendering, not just style. The chat frontend runs replies
     // through marked, and CommonMark treats \( and \[ as escaped brackets — so the frontend

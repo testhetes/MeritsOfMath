@@ -39,18 +39,6 @@ body {
 .chat-header .sub { font-size: 0.78rem; color: var(--text-tertiary); margin: 0; }
 .chat-header .spacer { flex: 1; }
 
-.lang-toggle { display: flex; background: var(--bg-elevated); border-radius: var(--radius-full); padding: 3px; }
-.lang-toggle button {
-    border: 0; background: transparent; color: var(--text-secondary);
-    -webkit-text-fill-color: currentColor;
-    padding: 5px 12px; border-radius: var(--radius-full);
-    font: inherit; font-size: 0.78rem; cursor: pointer;
-}
-.lang-toggle button.lang-active {
-    background: linear-gradient(135deg, var(--accent-primary), #6366f1);
-    color: #fff; -webkit-text-fill-color: #fff;
-}
-
 .icon-btn {
     border: 0; background: var(--bg-elevated); color: var(--text-secondary);
     -webkit-text-fill-color: currentColor;

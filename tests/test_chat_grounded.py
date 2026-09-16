@@ -14,7 +14,6 @@ def test_grounded_reply_retrieves_context(base_url):
     r = _chat(base_url, {
         "messages": [{"role": "user", "content": "Con em chưa hiểu vì sao cộng hai số lại phải nhớ. Giúp em với."}],
         "ground": True,
-        "lang": "vi",
     })
     assert r.status_code == 200, r.text
     assert int(r.headers.get("X-RAG-Chunks", "0")) > 0, r.headers
@@ -32,7 +31,6 @@ def test_short_reply_stays_grounded(base_url):
             {"role": "user", "content": "12"},
         ],
         "ground": True,
-        "lang": "vi",
     })
     assert r.status_code == 200, r.text
     assert int(r.headers.get("X-RAG-Chunks", "0")) > 0, r.headers
@@ -44,7 +42,6 @@ def test_rag_error_header_is_a_fixed_code(base_url):
     r = _chat(base_url, {
         "messages": [{"role": "user", "content": "Phân số là gì?"}],
         "ground": True,
-        "lang": "vi",
     })
     assert r.status_code == 200, r.text
     err = r.headers.get("X-RAG-Error")
@@ -65,7 +62,6 @@ def test_offtopic_message_still_gets_a_reply(base_url):
     r = _chat(base_url, {
         "messages": [{"role": "user", "content": "zzzqqq wubbalubba flimflam"}],
         "ground": True,
-        "lang": "vi",
     })
     assert r.status_code == 200, r.text
     assert "X-RAG-Chunks" in r.headers, dict(r.headers)
@@ -89,7 +85,9 @@ def test_ungrounded_request_is_unchanged(base_url):
     assert "BANANA" in content.upper()
 
 
-def test_grounded_reply_is_in_english_when_asked(base_url):
+def test_reply_is_vietnamese_even_if_an_old_page_asks_for_english(base_url):
+    """English mode was removed on 2026-09-16. A page cached from before may still send
+    lang "en"; the tutor must answer in Vietnamese regardless."""
     r = _chat(base_url, {
         "messages": [{"role": "user", "content": "How do I add 27 and 15?"}],
         "ground": True,
@@ -97,5 +95,4 @@ def test_grounded_reply_is_in_english_when_asked(base_url):
     })
     assert r.status_code == 200, r.text
     content = r.json()["choices"][0]["message"]["content"]
-    # Vietnamese-specific characters should not appear in an English reply.
-    assert not any(ch in content for ch in "ăâđêôơư"), content
+    assert any(ch in content.lower() for ch in "ăâđêôơư"), content

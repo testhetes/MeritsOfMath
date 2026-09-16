@@ -5,16 +5,19 @@ window.Chat = (function () {
     const ENDPOINT = '/api/chat';
     const STORAGE_KEY = 'meritsChatHistory';
     const MAX_TURNS = 30;          // trimmed before sending; the server caps again
-    const SUGGESTION_KEYS = ['chat.suggest1', 'chat.suggest2', 'chat.suggest3'];
+    // Every word the chat shows. The app is Vietnamese only; its English mode was removed on
+    // 2026-09-16.
+    const TEXT = {
+        greeting: 'Chào em! Cô ở đây để giúp em tự tìm ra lời giải. Hôm nay em đang học bài gì?',
+        suggestions: ['Em không hiểu phép cộng có nhớ', 'Phân số là gì ạ?', 'Giúp em học bảng nhân'],
+        thinking: 'Đang suy nghĩ...',
+        error: 'Gia sư đang bận. Em thử lại sau giây lát nhé.'
+    };
 
     let history = [];              // [{ role: 'user'|'assistant', content: string }]
     let sending = false;
 
     const els = {};
-
-    function t(key) {
-        return (window.I18n && window.I18n.t(key)) || key;
-    }
 
     function load() {
         try {
@@ -34,11 +37,12 @@ window.Chat = (function () {
         }
     }
 
-    // Keys written by the retired skill-tree game (js/aiTutor.js, js/progression.js). That code is
-    // gone, but the values persist in every visitor's browser on this origin — including any Groq
-    // API key a user once pasted into the old Settings modal. Remove them. The chat's own keys,
-    // meritsChatHistory and meritsLang, are deliberately NOT in this list.
-    const RETIRED_KEYS = ['groqApiKey', 'localApiBaseUrl', 'localModelName', 'aiProvider', 'meritsProfile_v2'];
+    // Keys written by code that no longer exists: the retired skill-tree game (js/aiTutor.js,
+    // js/progression.js) and the retired English toggle (meritsLang). The values persist in every
+    // visitor's browser on this origin — including any Groq API key a user once pasted into the
+    // old Settings modal. Remove them. The chat's own key, meritsChatHistory, is deliberately NOT
+    // in this list.
+    const RETIRED_KEYS = ['groqApiKey', 'localApiBaseUrl', 'localModelName', 'aiProvider', 'meritsProfile_v2', 'meritsLang'];
 
     function clearRetiredStorage() {
         try {
@@ -285,7 +289,7 @@ window.Chat = (function () {
         div.id = 'typing';
         // The animation is three dots, which conveys nothing to a screen reader.
         div.setAttribute('role', 'status');
-        div.setAttribute('aria-label', t('chat.thinking'));
+        div.setAttribute('aria-label', TEXT.thinking);
         div.innerHTML = '<span></span><span></span><span></span>';
         els.messages.appendChild(div);
         scrollToBottom();
@@ -304,7 +308,7 @@ window.Chat = (function () {
         typesetClear(els.messages);
         els.messages.innerHTML = '';
         if (history.length === 0) {
-            appendBubble('assistant', t('chat.greeting'));
+            appendBubble('assistant', TEXT.greeting);
         } else {
             history.forEach((m) => appendBubble(m.role, m.content));
         }
@@ -315,11 +319,11 @@ window.Chat = (function () {
     function renderSuggestions() {
         els.suggestions.innerHTML = '';
         if (history.length > 0) return;   // only offer openers on an empty conversation
-        SUGGESTION_KEYS.forEach((key) => {
+        TEXT.suggestions.forEach((text) => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.textContent = t(key);
-            btn.addEventListener('click', () => send(btn.textContent));
+            btn.textContent = text;
+            btn.addEventListener('click', () => send(text));
             els.suggestions.appendChild(btn);
         });
     }
@@ -346,7 +350,6 @@ window.Chat = (function () {
                 body: JSON.stringify({
                     messages: history.slice(-MAX_TURNS * 2),
                     ground: true,
-                    lang: window.I18n ? window.I18n.getLang() : 'vi',
                     max_tokens: 220
                 })
             });
@@ -354,7 +357,7 @@ window.Chat = (function () {
             hideTyping();
 
             if (!res.ok) {
-                appendBubble('assistant', t('chat.error'), 'error');
+                appendBubble('assistant', TEXT.error, 'error');
                 history.pop();      // drop the unanswered turn so a retry is clean
                 return;
             }
@@ -362,7 +365,7 @@ window.Chat = (function () {
             const data = await res.json();
             const reply = (data.choices && data.choices[0] && data.choices[0].message.content) || '';
             if (!reply.trim()) {
-                appendBubble('assistant', t('chat.error'), 'error');
+                appendBubble('assistant', TEXT.error, 'error');
                 history.pop();
                 return;
             }
@@ -372,7 +375,7 @@ window.Chat = (function () {
             save();
         } catch {
             hideTyping();
-            appendBubble('assistant', t('chat.error'), 'error');
+            appendBubble('assistant', TEXT.error, 'error');
             history.pop();
         } finally {
             sending = false;
@@ -393,13 +396,6 @@ window.Chat = (function () {
         renderAll();
     }
 
-    // The i18n engine handles data-i18n text and data-i18n-ph placeholders, but not
-    // title/aria attributes, so those are set here and refreshed on language change.
-    function applyLabels() {
-        els.clearBtn.title = t('chat.clear');
-        els.clearBtn.setAttribute('aria-label', t('chat.clear'));
-    }
-
     function init() {
         clearRetiredStorage();   // first, before load() reads the conversation (see RETIRED_KEYS)
         els.messages = document.getElementById('messages');
@@ -410,7 +406,6 @@ window.Chat = (function () {
         els.clearBtn = document.getElementById('clear-btn');
 
         load();
-        applyLabels();
         renderAll();
 
         els.composer.addEventListener('submit', (e) => {
@@ -431,13 +426,6 @@ window.Chat = (function () {
         });
 
         els.clearBtn.addEventListener('click', clearConversation);
-
-        // Re-render on language change so the greeting and suggestions switch language.
-        document.addEventListener('langchange', () => {
-            applyLabels();
-            if (history.length === 0) renderAll();
-            else renderSuggestions();
-        });
     }
 
     document.addEventListener('DOMContentLoaded', init);

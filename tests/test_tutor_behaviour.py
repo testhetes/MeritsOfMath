@@ -24,7 +24,7 @@ MIN_PASSES = len(CASES) - 1
 def _ask(base_url, message):
     r = requests.post(
         f"{base_url}/api/chat",
-        json={"messages": [{"role": "user", "content": message}], "ground": True, "lang": "vi"},
+        json={"messages": [{"role": "user", "content": message}], "ground": True},
         timeout=90,
     )
     assert r.status_code == 200, r.text
