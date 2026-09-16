@@ -71,7 +71,11 @@ body {
     cursor: pointer;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
-.btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+/* Hover only where there is a real hover: on a touch screen :hover sticks after a tap, which left
+   the last key or button tapped looking lifted. */
+@media (hover: hover) {
+    .btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+}
 .btn:active { transform: translate(3px, 3px); box-shadow: none; }
 .btn:disabled { transform: none; box-shadow: none; cursor: default; }
 
@@ -116,7 +120,7 @@ body {
 .chat-header h1 { margin: 0; font-family: var(--font-heading); font-weight: 700; font-size: 1.1rem; }
 .chat-header .sub { margin: 0; font-family: var(--font-label); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; }
 .chat-header .spacer { flex: 1; }
-.icon-btn { width: 40px; height: 40px; padding: 0; font-size: 1.1rem; }
+.icon-btn { width: 44px; height: 44px; padding: 0; font-size: 1.15rem; }
 
 /* ---- Home ---- */
 .home {
@@ -163,7 +167,9 @@ body {
 
 .grade-chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .grade-chip { min-height: 44px; padding: 0 16px; font-size: 0.95rem; box-shadow: 2px 2px 0 0 var(--ink); }
-.grade-chip:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 0 var(--ink); }
+@media (hover: hover) {
+    .grade-chip:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 0 var(--ink); }
+}
 .grade-chip[aria-pressed="true"] { transform: translate(1px, 1px); box-shadow: 2px 2px 0 0 var(--bright); }
 .grade-chip[aria-pressed="true"]::after { content: ' ✓'; }
 .grade-chip:active { transform: translate(2px, 2px); box-shadow: none; }
@@ -182,7 +188,9 @@ body {
     color: var(--text);
     box-shadow: var(--shadow);
 }
-.lesson-card:hover { box-shadow: 7px 7px 0 0 var(--ink); }
+@media (hover: hover) {
+    .lesson-card:hover { box-shadow: 7px 7px 0 0 var(--ink); }
+}
 .lesson-title { font-size: 1rem; }
 
 /* ---- Messages ---- */
@@ -263,19 +271,28 @@ body {
     line-height: 1.4;
 }
 .composer textarea::placeholder { color: var(--placeholder); opacity: 1; }
-.composer textarea:focus { outline: 3px solid var(--blue-bright); outline-offset: 2px; }
+.composer textarea:focus { outline: 3px solid var(--blue-bright); outline-offset: 3px; }
 .send-btn { padding: 0 18px; }
 
 /* ---- Lesson cards inside the conversation ---- */
 /* Cards are not clipped like text bubbles: the confetti flies outside them. */
 .msg.card { width: 100%; max-width: min(560px, 92%); display: flex; flex-direction: column; gap: 12px; position: relative; overflow: visible; }
 .msg.card.solved { box-shadow: 5px 5px 0 0 var(--green-bright); }
-.card-text { margin: 0; }
+/* The card itself can't scroll sideways (the confetti would be clipped), so a formula too wide for
+   a narrow phone scrolls inside its own text block instead of poking out of the card. The list
+   scrolls as a whole so its bullets, which sit in its left padding, are not clipped.
+   overflow-y stays hidden: a stacked \dfrac reaches 1px below its line box, which otherwise showed
+   a vertical scrollbar beside the question; the 2px bottom padding keeps that pixel visible. */
+.card-text { margin: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .card-btn { min-height: 44px; padding: 0 14px; }
 .card-btn.highlight { box-shadow: 3px 3px 0 0 var(--lavender-bright); }
+@media (hover: hover) {
+    .card-btn.highlight:hover { box-shadow: 5px 5px 0 0 var(--lavender-bright); }
+}
+.card-btn.highlight:active { box-shadow: none; }
 
-.ghinho-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.ghinho-list { margin: 0; padding: 0 0 2px 20px; display: flex; flex-direction: column; gap: 8px; overflow-x: auto; overflow-y: hidden; }
 .ghinho-list li::marker { color: var(--yellow-bright); }
 
 .answer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -293,14 +310,17 @@ body {
     font-weight: 800;
     font-size: 1.25rem;
 }
-.answer-input:focus { outline: 3px solid var(--blue-bright); outline-offset: 2px; }
+.answer-input:focus { outline: 3px solid var(--blue-bright); outline-offset: 3px; }
 .answer-input:disabled { opacity: 1; }
 .answer-unit { font-weight: 600; }
 .answer-input.shake { animation: shake 0.3s ease-in-out; }
 @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
 .feedback { margin: 0; align-self: flex-start; border: 3px solid var(--ink); padding: 6px 10px; color: var(--on-fill); font-weight: 600; }
-.feedback:empty { display: none; }
+/* Empty feedback takes no space but stays in the page, so screen readers keep watching it
+   (role="status") and announce the result when it appears. The negative margin cancels the card's
+   gap above it. */
+.feedback:empty { border: 0; padding: 0; margin-top: -12px; }
 .feedback.correct { background: var(--green); }
 .feedback.not-simplest { background: var(--yellow); }
 .feedback.wrong, .feedback.invalid { background: var(--coral); }

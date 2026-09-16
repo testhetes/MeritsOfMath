@@ -46,6 +46,34 @@ window.MathPad = (function () {
     const els = {};
     let chatOn = false;
     let answerInput = null;   // the practice answer box being typed into, if any
+    let pointerIsDown = false;
+
+    // Closing the answer keypad moves the conversation: the keypad is taller than the chat box it
+    // gives back. If that happened between a tap's press and its release, the release would land
+    // on a different element and the tap would be lost (a child tapping the card's own "Kiểm tra"
+    // or "Cô gợi ý" had to tap twice). So a close waits until the tap in progress has finished.
+    function afterTap(fn) {
+        if (!pointerIsDown) {
+            setTimeout(fn, 0);
+            return;
+        }
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            document.removeEventListener('pointerup', finish, true);
+            document.removeEventListener('pointercancel', finish, true);
+            setTimeout(fn, 0);
+        };
+        document.addEventListener('pointerup', finish, true);
+        document.addEventListener('pointercancel', finish, true);
+    }
+
+    // Keys and the toggle never take focus, so the field being typed into keeps its caret.
+    function keepFocus(node) {
+        node.addEventListener('pointerdown', (event) => event.preventDefault());
+        node.addEventListener('mousedown', (event) => event.preventDefault());
+    }
 
     function makeKey(spec) {
         const node = document.createElement('button');
@@ -65,7 +93,7 @@ window.MathPad = (function () {
             node.textContent = spec.text;
         }
         if (spec.aria) node.setAttribute('aria-label', spec.aria);
-        node.addEventListener('pointerdown', (event) => event.preventDefault());
+        keepFocus(node);
         node.addEventListener('click', () => press(spec));
         return node;
     }
@@ -85,6 +113,8 @@ window.MathPad = (function () {
     }
 
     function press(spec) {
+        // The answer box was removed from the page without a blur (not every browser fires one).
+        if (answerInput && !answerInput.isConnected) release(answerInput);
         const field = answerInput || els.input;
         if (!answerInput) els.input.focus();
         if (spec.action === 'delete') {
@@ -109,6 +139,10 @@ window.MathPad = (function () {
         if (start === end) {
             if (start === 0) return;
             start -= 1;
+            // Don't split an emoji typed on the phone keyboard (two UTF-16 code units).
+            if (start > 0 && /[\uDC00-\uDFFF]/.test(field.value[start]) && /[\uD800-\uDBFF]/.test(field.value[start - 1])) {
+                start -= 1;
+            }
         }
         field.setRangeText('', start, end, 'end');
         field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -147,7 +181,9 @@ window.MathPad = (function () {
     function attachAnswer(input) {
         if (!els.pad) return;   // init never ran: the box keeps the phone keyboard
         input.setAttribute('inputmode', 'none');
-        let lastValid = PARTIAL_ANSWER.test(input.value) ? input.value : '';
+        // Taken when the box gains focus, not now: a saved attempt is put back into the box after
+        // it is attached, and an invalid key must not wipe that attempt.
+        let lastValid = '';
         input.addEventListener('input', () => {
             if (PARTIAL_ANSWER.test(input.value)) {
                 lastValid = input.value;
@@ -157,12 +193,19 @@ window.MathPad = (function () {
         });
         input.addEventListener('focus', () => {
             if (input.disabled) return;
+            lastValid = PARTIAL_ANSWER.test(input.value) ? input.value : '';
             answerInput = input;
             els.composer.hidden = true;
             render('answer');
-            requestAnimationFrame(() => input.scrollIntoView({ block: 'nearest' }));
+            // Straight away, not on the next frame: scrollIntoView forces layout, so the new
+            // keypad is already measured, and a frame callback can be held back indefinitely.
+            input.scrollIntoView({ block: 'nearest' });
         });
-        input.addEventListener('blur', () => release(input));
+        input.addEventListener('blur', () => {
+            afterTap(() => {
+                if (document.activeElement !== input) release(input);
+            });
+        });
     }
 
     // Stops typing into an answer box: on blur, and when a right answer locks the box (a disabled
@@ -178,16 +221,27 @@ window.MathPad = (function () {
         }
     }
 
+    // Drops any answer box the keypad was typing into, for js/chat.js to call before it rebuilds the
+    // conversation: the rebuilt cards are new elements, and the old box may never fire blur.
+    function reset() {
+        if (answerInput) release(answerInput);
+    }
+
     function init(options) {
         els.pad = options.pad;
         els.toggle = options.toggle;
         els.input = options.input;
         els.composer = options.composer;
         els.onChatOpen = options.onChatOpen || function () {};
+        els.pad.setAttribute('role', 'group');
+        els.pad.setAttribute('aria-label', 'Bàn phím toán');
+        document.addEventListener('pointerdown', () => { pointerIsDown = true; }, true);
+        document.addEventListener('pointerup', () => { pointerIsDown = false; }, true);
+        document.addEventListener('pointercancel', () => { pointerIsDown = false; }, true);
         els.toggle.hidden = false;
-        els.toggle.addEventListener('pointerdown', (event) => event.preventDefault());
+        keepFocus(els.toggle);
         els.toggle.addEventListener('click', () => setChat(!chatOn));
     }
 
-    return { init: init, attachAnswer: attachAnswer, release: release };
+    return { init: init, attachAnswer: attachAnswer, release: release, reset: reset };
 })();

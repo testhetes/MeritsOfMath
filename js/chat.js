@@ -357,6 +357,7 @@ window.Chat = (function () {
         // there is no separate container-wide typeset here (see the comment above typesetOnce
         // for why that used to duplicate formulas).
         typesetClear(els.messages);
+        if (window.MathPad) window.MathPad.reset();   // the cards it was typing into are about to go
         els.messages.innerHTML = '';
         const lessonsReady = Boolean(window.Lessons && window.Lessons.isReady());
         const atHome = lessonsReady && history.length === 0;
