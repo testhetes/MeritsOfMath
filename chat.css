@@ -24,7 +24,8 @@ body {
     font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     background: var(--bg-main);
     color: var(--text-primary);
-    height: 100dvh;
+    /* The phone keyboard: see fitToVisibleViewport in js/chat.js. */
+    height: var(--app-height, 100dvh);
     display: flex;
     flex-direction: column;
 }

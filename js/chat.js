@@ -483,6 +483,35 @@ window.Chat = (function () {
         renderAll();
     }
 
+    // The phone's on-screen keyboard covers the bottom of the page. Chrome keeps 100dvh at full
+    // height when it opens, so the chat box sat under the keyboard and Chrome scrolled the whole
+    // page to reach it, pushing the header off the top (reported on Android, 2026-09-16).
+    // index.html asks Chrome to shrink the page instead (interactive-widget=resizes-content).
+    // Browsers that ignore that, iOS Safari among them, get the visible height copied into
+    // --app-height, which chat.css uses for the app's height.
+    // Pinch-zoom also shrinks visualViewport.height, by the zoom scale, so the height is multiplied
+    // back by the scale, and the page is only scrolled back to the top when not zoomed.
+    function fitToVisibleViewport() {
+        const viewport = window.visualViewport;
+        if (!viewport) return;   // no API: chat.css falls back to 100dvh
+        const sync = () => {
+            const height = Math.round(viewport.height * viewport.scale);
+            document.documentElement.style.setProperty('--app-height', height + 'px');
+            if (viewport.scale > 1.01) return;
+            if (window.scrollY !== 0) window.scrollTo(0, 0);
+            const focused = document.activeElement;
+            if (focused === els.input) {
+                scrollToBottom();
+            } else if (focused && els.messages.contains(focused)) {
+                focused.scrollIntoView({ block: 'nearest' });
+            }
+        };
+        viewport.addEventListener('resize', sync);
+        viewport.addEventListener('scroll', sync);
+        window.addEventListener('resize', sync);   // in case a layout resize skips visualViewport's event
+        sync();
+    }
+
     function init() {
         clearRetiredStorage();   // first, before load() reads the conversation (see RETIRED_KEYS)
         els.home = document.getElementById('home');
@@ -492,6 +521,7 @@ window.Chat = (function () {
         els.composer = document.getElementById('composer');
         els.clearBtn = document.getElementById('clear-btn');
         els.backBtn = document.getElementById('back-btn');
+        fitToVisibleViewport();
 
         load();
 

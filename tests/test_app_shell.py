@@ -35,3 +35,17 @@ def test_english_mode_is_gone():
     assert "lang-toggle" not in css
     server = (ROOT / "functions" / "api" / "chat.js").read_text(encoding="utf-8")
     assert "body.lang" not in server and "lang === 'en'" not in server
+
+
+def test_layout_follows_the_on_screen_keyboard():
+    """Chrome keeps 100dvh at full height when the phone keyboard opens, so the chat box sat under
+    the keyboard (reported 2026-09-16). index.html must ask Chrome to resize the page, and the app's
+    height must come from the visible height js/chat.js measures, for browsers that ignore that."""
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    viewport = re.search(r'<meta name="viewport" content="([^"]*)"', html)
+    assert viewport, "viewport meta tag not found"
+    assert "interactive-widget=resizes-content" in viewport.group(1)
+    css = (ROOT / "chat.css").read_text(encoding="utf-8")
+    assert "height: var(--app-height, 100dvh);" in css
+    chat = (ROOT / "js" / "chat.js").read_text(encoding="utf-8")
+    assert "visualViewport" in chat and "--app-height" in chat
