@@ -39,43 +39,43 @@
           "title": "Nhân hai phân số",
           "ghiNho": [
             "Muốn nhân hai phân số, ta lấy tử số nhân tử số, mẫu số nhân mẫu số.",
-            "\\(\\frac{a}{b} \\times \\frac{c}{d} = \\frac{a \\times c}{b \\times d}\\)",
-            "Nhân phân số với số tự nhiên: nhân tử số với số đó, giữ nguyên mẫu số. Ví dụ \\(\\frac{3}{7} \\times 2 = \\frac{6}{7}\\).",
+            "\\(\\dfrac{a}{b} \\times \\dfrac{c}{d} = \\dfrac{a \\times c}{b \\times d}\\)",
+            "Nhân phân số với số tự nhiên: nhân tử số với số đó, giữ nguyên mẫu số. Ví dụ \\(\\dfrac{3}{7} \\times 2 = \\dfrac{6}{7}\\).",
             "Khi nhân phân số, không cần quy đồng mẫu số.",
             "Nhân xong, rút gọn kết quả nếu có thể."
           ],
           "problems": [
-            { "question": "Tính \\(\\frac{2}{3} \\times \\frac{4}{5}\\).", "expr": "2/3 * 4/5", "answer": "8/15", "simplest": false },
-            { "question": "Tính \\(\\frac{1}{2} \\times \\frac{3}{7}\\).", "expr": "1/2 * 3/7", "answer": "3/14", "simplest": false },
-            { "question": "Tính \\(\\frac{5}{6} \\times \\frac{1}{4}\\).", "expr": "5/6 * 1/4", "answer": "5/24", "simplest": false },
-            { "question": "Tính \\(\\frac{3}{8} \\times 3\\).", "expr": "3/8 * 3", "answer": "9/8", "simplest": false },
-            { "question": "Tính \\(4 \\times \\frac{2}{9}\\).", "expr": "4 * 2/9", "answer": "8/9", "simplest": false },
-            { "question": "Tính rồi rút gọn kết quả: \\(\\frac{4}{5} \\times \\frac{5}{8}\\).", "expr": "4/5 * 5/8", "answer": "1/2", "simplest": true },
-            { "question": "Tính rồi rút gọn kết quả: \\(\\frac{3}{10} \\times \\frac{5}{9}\\).", "expr": "3/10 * 5/9", "answer": "1/6", "simplest": true },
-            { "question": "Tính rồi rút gọn kết quả: \\(\\frac{5}{12} \\times 4\\).", "expr": "5/12 * 4", "answer": "5/3", "simplest": true },
-            { "question": "Một hình chữ nhật có chiều dài \\(\\frac{5}{6}\\) m và chiều rộng \\(\\frac{2}{3}\\) m. Tính diện tích hình chữ nhật đó.", "expr": "5/6 * 2/3", "answer": "5/9", "simplest": false, "unit": "m²" }
+            { "question": "Tính \\(\\dfrac{2}{3} \\times \\dfrac{4}{5}\\).", "expr": "2/3 * 4/5", "answer": "8/15", "simplest": false },
+            { "question": "Tính \\(\\dfrac{1}{2} \\times \\dfrac{3}{7}\\).", "expr": "1/2 * 3/7", "answer": "3/14", "simplest": false },
+            { "question": "Tính \\(\\dfrac{5}{6} \\times \\dfrac{1}{4}\\).", "expr": "5/6 * 1/4", "answer": "5/24", "simplest": false },
+            { "question": "Tính \\(\\dfrac{3}{8} \\times 3\\).", "expr": "3/8 * 3", "answer": "9/8", "simplest": false },
+            { "question": "Tính \\(4 \\times \\dfrac{2}{9}\\).", "expr": "4 * 2/9", "answer": "8/9", "simplest": false },
+            { "question": "Tính rồi rút gọn kết quả: \\(\\dfrac{4}{5} \\times \\dfrac{5}{8}\\).", "expr": "4/5 * 5/8", "answer": "1/2", "simplest": true },
+            { "question": "Tính rồi rút gọn kết quả: \\(\\dfrac{3}{10} \\times \\dfrac{5}{9}\\).", "expr": "3/10 * 5/9", "answer": "1/6", "simplest": true },
+            { "question": "Tính rồi rút gọn kết quả: \\(\\dfrac{5}{12} \\times 4\\).", "expr": "5/12 * 4", "answer": "5/3", "simplest": true },
+            { "question": "Một hình chữ nhật có chiều dài \\(\\dfrac{5}{6}\\) m và chiều rộng \\(\\dfrac{2}{3}\\) m. Tính diện tích hình chữ nhật đó.", "expr": "5/6 * 2/3", "answer": "5/9", "simplest": false, "unit": "m²" }
           ]
         },
         {
           "id": "tinh-chat-phep-nhan-phan-so",
           "title": "Tính chất của phép nhân phân số",
           "ghiNho": [
-            "Giao hoán: đổi chỗ hai phân số trong một tích thì tích không thay đổi. \\(\\frac{a}{b} \\times \\frac{c}{d} = \\frac{c}{d} \\times \\frac{a}{b}\\)",
-            "Kết hợp: \\((\\frac{a}{b} \\times \\frac{c}{d}) \\times \\frac{m}{n} = \\frac{a}{b} \\times (\\frac{c}{d} \\times \\frac{m}{n})\\)",
-            "Nhân một tổng với một phân số: \\((\\frac{a}{b} + \\frac{c}{d}) \\times \\frac{m}{n} = \\frac{a}{b} \\times \\frac{m}{n} + \\frac{c}{d} \\times \\frac{m}{n}\\)",
+            "Giao hoán: đổi chỗ hai phân số trong một tích thì tích không thay đổi. \\(\\dfrac{a}{b} \\times \\dfrac{c}{d} = \\dfrac{c}{d} \\times \\dfrac{a}{b}\\)",
+            "Kết hợp: \\((\\dfrac{a}{b} \\times \\dfrac{c}{d}) \\times \\dfrac{m}{n} = \\dfrac{a}{b} \\times (\\dfrac{c}{d} \\times \\dfrac{m}{n})\\)",
+            "Nhân một tổng với một phân số: \\((\\dfrac{a}{b} + \\dfrac{c}{d}) \\times \\dfrac{m}{n} = \\dfrac{a}{b} \\times \\dfrac{m}{n} + \\dfrac{c}{d} \\times \\dfrac{m}{n}\\)",
             "Phân số nào nhân với 1 cũng bằng chính nó.",
             "Tính thuận tiện: tìm hai phân số nhân với nhau được 1 để nhân trước."
           ],
           "problems": [
-            { "question": "Điền phân số thích hợp vào chỗ dấu hỏi: \\(\\frac{3}{5} \\times \\frac{2}{7} = \\frac{2}{7} \\times \\, ?\\)", "expr": "3/5", "answer": "3/5", "simplest": false },
-            { "question": "Tính bằng cách thuận tiện: \\(\\frac{4}{9} \\times \\frac{7}{11} \\times \\frac{9}{4}\\).", "expr": "4/9 * 7/11 * 9/4", "answer": "7/11", "simplest": false },
-            { "question": "Tính bằng cách thuận tiện: \\(\\frac{2}{3} \\times \\frac{5}{6} \\times \\frac{3}{2}\\).", "expr": "2/3 * 5/6 * 3/2", "answer": "5/6", "simplest": false },
-            { "question": "Tính: \\((\\frac{1}{3} + \\frac{1}{3}) \\times \\frac{3}{4}\\).", "expr": "(1/3 + 1/3) * 3/4", "answer": "1/2", "simplest": false },
-            { "question": "Tính: \\((\\frac{2}{7} + \\frac{3}{7}) \\times \\frac{7}{8}\\).", "expr": "(2/7 + 3/7) * 7/8", "answer": "5/8", "simplest": false },
-            { "question": "Tính rồi rút gọn kết quả: \\(\\frac{3}{8} \\times \\frac{5}{6} + \\frac{5}{8} \\times \\frac{5}{6}\\).", "expr": "3/8 * 5/6 + 5/8 * 5/6", "answer": "5/6", "simplest": true },
-            { "question": "Tính: \\(\\frac{5}{6} \\times \\frac{7}{7}\\).", "expr": "5/6 * 7/7", "answer": "5/6", "simplest": false },
-            { "question": "Tính bằng cách thuận tiện: \\(\\frac{1}{2} \\times \\frac{3}{5} \\times 2\\).", "expr": "1/2 * 3/5 * 2", "answer": "3/5", "simplest": false },
-            { "question": "Một tấm kính hình chữ nhật dài \\(\\frac{3}{4}\\) m, rộng \\(\\frac{1}{2}\\) m. Bạn An tính diện tích bằng \\(\\frac{3}{4} \\times \\frac{1}{2}\\), bạn Bình tính bằng \\(\\frac{1}{2} \\times \\frac{3}{4}\\). Diện tích tấm kính là bao nhiêu mét vuông?", "expr": "3/4 * 1/2", "answer": "3/8", "simplest": false, "unit": "m²" }
+            { "question": "Điền phân số thích hợp vào chỗ dấu hỏi: \\(\\dfrac{3}{5} \\times \\dfrac{2}{7} = \\dfrac{2}{7} \\times \\, ?\\)", "expr": "3/5", "answer": "3/5", "simplest": false },
+            { "question": "Tính bằng cách thuận tiện: \\(\\dfrac{4}{9} \\times \\dfrac{7}{11} \\times \\dfrac{9}{4}\\).", "expr": "4/9 * 7/11 * 9/4", "answer": "7/11", "simplest": false },
+            { "question": "Tính bằng cách thuận tiện: \\(\\dfrac{2}{3} \\times \\dfrac{5}{6} \\times \\dfrac{3}{2}\\).", "expr": "2/3 * 5/6 * 3/2", "answer": "5/6", "simplest": false },
+            { "question": "Tính: \\((\\dfrac{1}{3} + \\dfrac{1}{3}) \\times \\dfrac{3}{4}\\).", "expr": "(1/3 + 1/3) * 3/4", "answer": "1/2", "simplest": false },
+            { "question": "Tính: \\((\\dfrac{2}{7} + \\dfrac{3}{7}) \\times \\dfrac{7}{8}\\).", "expr": "(2/7 + 3/7) * 7/8", "answer": "5/8", "simplest": false },
+            { "question": "Tính rồi rút gọn kết quả: \\(\\dfrac{3}{8} \\times \\dfrac{5}{6} + \\dfrac{5}{8} \\times \\dfrac{5}{6}\\).", "expr": "3/8 * 5/6 + 5/8 * 5/6", "answer": "5/6", "simplest": true },
+            { "question": "Tính: \\(\\dfrac{5}{6} \\times \\dfrac{7}{7}\\).", "expr": "5/6 * 7/7", "answer": "5/6", "simplest": false },
+            { "question": "Tính bằng cách thuận tiện: \\(\\dfrac{1}{2} \\times \\dfrac{3}{5} \\times 2\\).", "expr": "1/2 * 3/5 * 2", "answer": "3/5", "simplest": false },
+            { "question": "Một tấm kính hình chữ nhật dài \\(\\dfrac{3}{4}\\) m, rộng \\(\\dfrac{1}{2}\\) m. Bạn An tính diện tích bằng \\(\\dfrac{3}{4} \\times \\dfrac{1}{2}\\), bạn Bình tính bằng \\(\\dfrac{1}{2} \\times \\dfrac{3}{4}\\). Diện tích tấm kính là bao nhiêu mét vuông?", "expr": "3/4 * 1/2", "answer": "3/8", "simplest": false, "unit": "m²" }
           ]
         },
         {
@@ -83,20 +83,20 @@
           "title": "Tìm phân số của một số",
           "ghiNho": [
             "Muốn tìm phân số của một số, ta lấy số đó nhân với phân số.",
-            "\\(\\frac{2}{3}\\) của 12 là \\(12 \\times \\frac{2}{3} = 8\\).",
+            "\\(\\dfrac{2}{3}\\) của 12 là \\(12 \\times \\dfrac{2}{3} = 8\\).",
             "Cách khác: chia số đó cho mẫu số, rồi nhân với tử số: \\(12 : 3 \\times 2 = 8\\).",
             "Mẫu số cho biết chia thành mấy phần bằng nhau, tử số cho biết lấy mấy phần."
           ],
           "problems": [
-            { "question": "Tìm \\(\\frac{1}{4}\\) của 20.", "expr": "20 * 1/4", "answer": "5", "simplest": false },
-            { "question": "Tìm \\(\\frac{2}{5}\\) của 30.", "expr": "30 * 2/5", "answer": "12", "simplest": false },
-            { "question": "Tìm \\(\\frac{3}{4}\\) của 24.", "expr": "24 * 3/4", "answer": "18", "simplest": false },
-            { "question": "Tìm \\(\\frac{5}{6}\\) của 42.", "expr": "42 * 5/6", "answer": "35", "simplest": false },
-            { "question": "Tìm \\(\\frac{2}{3}\\) của 18 kg.", "expr": "18 * 2/3", "answer": "12", "simplest": false, "unit": "kg" },
-            { "question": "Một lớp có 32 học sinh, trong đó \\(\\frac{3}{8}\\) số học sinh là học sinh nam. Hỏi lớp đó có bao nhiêu học sinh nam?", "expr": "32 * 3/8", "answer": "12", "simplest": false, "unit": "học sinh" },
-            { "question": "Một sợi dây dài 45 m. Người ta cắt đi \\(\\frac{4}{9}\\) sợi dây. Hỏi đã cắt đi bao nhiêu mét dây?", "expr": "45 * 4/9", "answer": "20", "simplest": false, "unit": "m" },
-            { "question": "Một cửa hàng có 48 quả trứng, đã bán \\(\\frac{5}{8}\\) số trứng. Hỏi cửa hàng đã bán bao nhiêu quả trứng?", "expr": "48 * 5/8", "answer": "30", "simplest": false, "unit": "quả" },
-            { "question": "Một thùng có 60 l nước. Đã dùng \\(\\frac{3}{5}\\) số nước. Hỏi trong thùng còn lại bao nhiêu lít nước?", "expr": "60 - 60 * 3/5", "answer": "24", "simplest": false, "unit": "l" }
+            { "question": "Tìm \\(\\dfrac{1}{4}\\) của 20.", "expr": "20 * 1/4", "answer": "5", "simplest": false },
+            { "question": "Tìm \\(\\dfrac{2}{5}\\) của 30.", "expr": "30 * 2/5", "answer": "12", "simplest": false },
+            { "question": "Tìm \\(\\dfrac{3}{4}\\) của 24.", "expr": "24 * 3/4", "answer": "18", "simplest": false },
+            { "question": "Tìm \\(\\dfrac{5}{6}\\) của 42.", "expr": "42 * 5/6", "answer": "35", "simplest": false },
+            { "question": "Tìm \\(\\dfrac{2}{3}\\) của 18 kg.", "expr": "18 * 2/3", "answer": "12", "simplest": false, "unit": "kg" },
+            { "question": "Một lớp có 32 học sinh, trong đó \\(\\dfrac{3}{8}\\) số học sinh là học sinh nam. Hỏi lớp đó có bao nhiêu học sinh nam?", "expr": "32 * 3/8", "answer": "12", "simplest": false, "unit": "học sinh" },
+            { "question": "Một sợi dây dài 45 m. Người ta cắt đi \\(\\dfrac{4}{9}\\) sợi dây. Hỏi đã cắt đi bao nhiêu mét dây?", "expr": "45 * 4/9", "answer": "20", "simplest": false, "unit": "m" },
+            { "question": "Một cửa hàng có 48 quả trứng, đã bán \\(\\dfrac{5}{8}\\) số trứng. Hỏi cửa hàng đã bán bao nhiêu quả trứng?", "expr": "48 * 5/8", "answer": "30", "simplest": false, "unit": "quả" },
+            { "question": "Một thùng có 60 l nước. Đã dùng \\(\\dfrac{3}{5}\\) số nước. Hỏi đã dùng bao nhiêu lít nước?", "expr": "60 * 3/5", "answer": "36", "simplest": false, "unit": "l" }
           ]
         },
         {
@@ -106,19 +106,19 @@
             "Đọc kĩ đề: bài cho biết gì, hỏi gì, đơn vị là gì.",
             "Diện tích hình chữ nhật = chiều dài × chiều rộng (cùng đơn vị đo).",
             "Tìm phân số của một số: lấy số đó nhân với phân số.",
-            "Bài toán hỏi phần còn lại: tìm phần đã dùng trước, rồi lấy tổng trừ đi phần đó.",
-            "Đáp số luôn có đơn vị. Diện tích dùng đơn vị mét vuông."
+            "Bài toán hỏi phần còn lại: tìm phần đã dùng trước, rồi lấy số ban đầu trừ đi phần đó.",
+            "Đáp số luôn có đơn vị. Diện tích dùng đơn vị đo diện tích (như cm², m²), không dùng đơn vị đo độ dài."
           ],
           "problems": [
-            { "question": "Một tấm bìa hình chữ nhật có chiều dài \\(\\frac{5}{7}\\) m, chiều rộng \\(\\frac{2}{3}\\) m. Tính diện tích tấm bìa.", "expr": "5/7 * 2/3", "answer": "10/21", "simplest": false, "unit": "m²" },
-            { "question": "Một hình vuông có cạnh \\(\\frac{2}{5}\\) m. Tính diện tích hình vuông đó.", "expr": "2/5 * 2/5", "answer": "4/25", "simplest": false, "unit": "m²" },
-            { "question": "Mỗi chai nước chứa \\(\\frac{3}{4}\\) l. Hỏi 8 chai như thế chứa bao nhiêu lít nước?", "expr": "3/4 * 8", "answer": "6", "simplest": false, "unit": "l" },
-            { "question": "Một bao gạo nặng 45 kg. Mẹ đã dùng \\(\\frac{2}{9}\\) bao gạo. Hỏi mẹ đã dùng bao nhiêu ki-lô-gam gạo?", "expr": "45 * 2/9", "answer": "10", "simplest": false, "unit": "kg" },
-            { "question": "Một đoàn xe chở 56 tấn hàng, đã dỡ xuống \\(\\frac{3}{7}\\) số hàng. Hỏi còn bao nhiêu tấn hàng chưa dỡ?", "expr": "56 - 56 * 3/7", "answer": "32", "simplest": false, "unit": "tấn" },
-            { "question": "Lớp 4A có 36 học sinh. Số học sinh giỏi toán bằng \\(\\frac{5}{12}\\) số học sinh của lớp. Hỏi lớp 4A có bao nhiêu học sinh giỏi toán?", "expr": "36 * 5/12", "answer": "15", "simplest": false, "unit": "học sinh" },
-            { "question": "Một mảnh vườn hình chữ nhật có chiều dài 24 m, chiều rộng bằng \\(\\frac{2}{3}\\) chiều dài. Tính diện tích mảnh vườn.", "expr": "24 * (24 * 2/3)", "answer": "384", "simplest": false, "unit": "m²" },
-            { "question": "Mỗi vòng quanh sân trường dài \\(\\frac{3}{10}\\) km. Bạn Nam chạy 5 vòng. Hỏi bạn Nam chạy được bao nhiêu ki-lô-mét?", "expr": "3/10 * 5", "answer": "3/2", "simplest": false, "unit": "km" },
-            { "question": "Một cửa hàng có 80 quả trứng. Buổi sáng bán \\(\\frac{1}{4}\\) số trứng, buổi chiều bán \\(\\frac{2}{5}\\) số trứng. Hỏi cả ngày cửa hàng bán được bao nhiêu quả trứng?", "expr": "80 * 1/4 + 80 * 2/5", "answer": "52", "simplest": false, "unit": "quả" }
+            { "question": "Một tấm bìa hình chữ nhật có chiều dài \\(\\dfrac{5}{7}\\) m, chiều rộng \\(\\dfrac{2}{3}\\) m. Tính diện tích tấm bìa.", "expr": "5/7 * 2/3", "answer": "10/21", "simplest": false, "unit": "m²" },
+            { "question": "Một hình vuông có cạnh \\(\\dfrac{2}{5}\\) m. Tính diện tích hình vuông đó.", "expr": "2/5 * 2/5", "answer": "4/25", "simplest": false, "unit": "m²" },
+            { "question": "Mỗi chai nước chứa \\(\\dfrac{3}{4}\\) l. Hỏi 8 chai như thế chứa bao nhiêu lít nước?", "expr": "3/4 * 8", "answer": "6", "simplest": false, "unit": "l" },
+            { "question": "Một bao gạo nặng 45 kg. Mẹ đã dùng \\(\\dfrac{2}{9}\\) bao gạo. Hỏi mẹ đã dùng bao nhiêu ki-lô-gam gạo?", "expr": "45 * 2/9", "answer": "10", "simplest": false, "unit": "kg" },
+            { "question": "Một đoàn xe chở 56 tấn hàng, đã dỡ xuống \\(\\dfrac{3}{7}\\) số hàng. Hỏi còn bao nhiêu tấn hàng chưa dỡ?", "expr": "56 - 56 * 3/7", "answer": "32", "simplest": false, "unit": "tấn" },
+            { "question": "Lớp 4A có 36 học sinh. Số học sinh giỏi toán bằng \\(\\dfrac{5}{12}\\) số học sinh của lớp. Hỏi lớp 4A có bao nhiêu học sinh giỏi toán?", "expr": "36 * 5/12", "answer": "15", "simplest": false, "unit": "học sinh" },
+            { "question": "Một mảnh vườn hình chữ nhật có chiều dài 24 m, chiều rộng bằng \\(\\dfrac{2}{3}\\) chiều dài. Tính diện tích mảnh vườn.", "expr": "24 * (24 * 2/3)", "answer": "384", "simplest": false, "unit": "m²" },
+            { "question": "Mỗi vòng quanh sân trường dài \\(\\dfrac{3}{10}\\) km. Bạn Nam chạy 5 vòng. Hỏi bạn Nam chạy được bao nhiêu ki-lô-mét?", "expr": "3/10 * 5", "answer": "3/2", "simplest": false, "unit": "km" },
+            { "question": "Một cửa hàng có 80 quả trứng. Buổi sáng bán \\(\\dfrac{1}{4}\\) số trứng, buổi chiều bán \\(\\dfrac{2}{5}\\) số trứng. Hỏi cả ngày cửa hàng bán được bao nhiêu quả trứng?", "expr": "80 * 1/4 + 80 * 2/5", "answer": "52", "simplest": false, "unit": "quả" }
           ]
         },
         { "id": "dau-hieu-chia-het", "title": "Dấu hiệu chia hết cho 2, 3, 5, 9" }

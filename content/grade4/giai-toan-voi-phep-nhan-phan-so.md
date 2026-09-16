@@ -28,13 +28,15 @@ Bài giải: Số gạo đã bán là 50 × 2/5 = 20 (kg). Đáp số: 20 kg.
 
 Có bài toán cần hai phép tính. Ví dụ: một cửa hàng có 50 kg gạo, đã bán 2/5 số gạo. Hỏi cửa hàng còn lại bao nhiêu ki-lô-gam gạo?
 
-Phép tính thứ nhất tìm số gạo đã bán: 50 × 2/5 = 20 (kg). Phép tính thứ hai tìm số gạo còn lại: 50 - 20 = 30 (kg).
+Phép tính thứ nhất tìm số gạo đã bán, phép tính thứ hai tìm số gạo còn lại.
+
+Bài giải: Số gạo đã bán là 50 × 2/5 = 20 (kg). Số gạo còn lại là 50 - 20 = 30 (kg). Đáp số: 30 kg.
 
 ## Lỗi thường gặp
 
 Có bạn tìm được số gạo đã bán rồi dừng lại, trong khi đề bài hỏi số gạo còn lại. Trước khi viết đáp số, em đọc lại câu hỏi một lần nữa.
 
-Có bạn quên đơn vị, hoặc viết sai đơn vị: diện tích phải là mét vuông, không phải mét.
+Có bạn quên đơn vị, hoặc viết sai đơn vị. Diện tích phải dùng đơn vị đo diện tích như cm² hay m², không dùng đơn vị đo độ dài như cm hay m. Ở bài tấm bìa, đáp số là 2/5 m², không phải 2/5 m.
 
 ## Luyện tập
 

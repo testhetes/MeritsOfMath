@@ -12,7 +12,7 @@ Khác với phép cộng, khi nhân em không cần quy đồng mẫu số.
 
 ## Vì sao lại nhân tử với tử, mẫu với mẫu?
 
-Hãy nghĩ đến một hình vuông có cạnh dài 1 m. Em chia một cạnh thành 5 phần bằng nhau và cạnh kia thành 3 phần bằng nhau, hình vuông được chia thành 3 × 5 = 15 ô nhỏ bằng nhau. Một hình chữ nhật dài 4/5 m, rộng 2/3 m phủ đúng 4 × 2 = 8 ô trong 15 ô đó. Vậy diện tích của nó là 8/15 m².
+Hãy nghĩ đến một hình vuông có cạnh dài 1 m, nên diện tích của nó là 1 m². Em chia chiều ngang thành 5 phần bằng nhau và chiều dọc thành 3 phần bằng nhau, hình vuông được chia thành 3 × 5 = 15 ô nhỏ bằng nhau, mỗi ô có diện tích 1/15 m². Một hình chữ nhật dài 4/5 m, rộng 2/3 m phủ đúng 4 × 2 = 8 ô như thế. Vậy diện tích của nó là 8/15 m².
 
 ## Nhân phân số với số tự nhiên
 
@@ -30,9 +30,9 @@ Ví dụ: 2/3 × 3/4 = 6/12. Cả 6 và 12 đều chia hết cho 6, nên 6/12 = 
 
 ## Lỗi thường gặp
 
-Có bạn nhân tử số với tử số nhưng lại cộng hai mẫu số, viết 1/2 × 1/3 = 1/5. Em thử nghĩ: chia cái bánh thành 3 phần, lấy 1 phần, rồi chia phần đó làm đôi. Cả cái bánh khi đó giống như được chia thành 3 × 2 = 6 phần bằng nhau, nên em có 1/6 cái bánh, không phải 1/5.
+Có bạn nhân tử số với tử số nhưng lại cộng hai mẫu số, viết 1/2 × 1/3 = 1/5. Em thử nghĩ: chia cái bánh thành 3 phần bằng nhau, lấy 1 phần, rồi lấy một nửa của phần đó. Cả cái bánh khi đó giống như được chia thành 3 × 2 = 6 phần bằng nhau, nên em có 1/6 cái bánh, không phải 1/5.
 
-Cũng có bạn quy đồng mẫu số như khi cộng rồi mới nhân. Khi nhân thì không cần quy đồng.
+Cũng có bạn quy đồng mẫu số như khi cộng, rồi chỉ nhân hai tử số và giữ nguyên mẫu số chung: 1/2 × 1/3 = 3/6 × 2/6 = 6/6. Kết quả đó sai, vì một nửa của một phần ba cái bánh không thể bằng cả cái bánh. Khi nhân, em không cần quy đồng: cứ lấy tử số nhân tử số, mẫu số nhân mẫu số.
 
 ## Luyện tập
 

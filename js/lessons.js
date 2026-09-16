@@ -304,7 +304,7 @@ window.Lessons = (function () {
             feedback.className = 'feedback' + (result ? ' ' + result : '');
             input.disabled = entry.solved;
             check.disabled = entry.solved;
-            hint.hidden = entry.solved;
+            actions.hidden = entry.solved;   // the whole row, so no empty gap is left behind
             hint.classList.toggle('highlight', result === 'wrong');
             done.hidden = !entry.solved;
             card.classList.toggle('solved', entry.solved);
