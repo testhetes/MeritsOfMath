@@ -4,9 +4,68 @@
     {
       "grade": 1,
       "lessons": [
-        { "id": "phep-cong-trong-pham-vi-10", "title": "Phép cộng trong phạm vi 10" },
-        { "id": "phep-tru-trong-pham-vi-10", "title": "Phép trừ trong phạm vi 10" },
-        { "id": "cac-so-den-100", "title": "Các số đến 100" }
+        {
+          "id": "phep-cong-trong-pham-vi-10",
+          "title": "Phép cộng trong phạm vi 10",
+          "ghiNho": [
+            "Phép cộng là gộp hai nhóm đồ vật lại với nhau để đếm tất cả.",
+            "Em có 2 quả táo, mẹ cho thêm 3 quả. Em có tất cả \\(2 + 3 = 5\\) quả táo.",
+            "Cộng bằng cách đếm tiếp từ số lớn hơn. Với \\(2 + 3\\), em bắt đầu từ 3 rồi đếm thêm hai bước: 4, 5."
+          ],
+          "problems": [
+            { "question": "Tính \\(4 + 3\\).", "expr": "4 + 3", "answer": "7", "simplest": false },
+            { "question": "Tính \\(2 + 6\\).", "expr": "2 + 6", "answer": "8", "simplest": false },
+            { "question": "Tính \\(5 + 5\\).", "expr": "5 + 5", "answer": "10", "simplest": false },
+            { "question": "Tính \\(1 + 8\\).", "expr": "1 + 8", "answer": "9", "simplest": false },
+            { "question": "Tính \\(0 + 6\\).", "expr": "0 + 6", "answer": "6", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(3 + \\, ? = 7\\)", "expr": "7 - 3", "answer": "4", "simplest": false },
+            { "question": "Tính \\(2 + 3 + 4\\).", "expr": "2 + 3 + 4", "answer": "9", "simplest": false },
+            { "question": "Lan có 3 bông hoa, Mai cho Lan thêm 4 bông hoa nữa. Hỏi Lan có tất cả mấy bông hoa?", "expr": "3 + 4", "answer": "7", "simplest": false, "unit": "bông" },
+            { "question": "Trong chuồng có 6 con gà, có thêm 2 con gà chạy vào. Hỏi trong chuồng có tất cả mấy con gà?", "expr": "6 + 2", "answer": "8", "simplest": false, "unit": "con" }
+          ]
+        },
+        {
+          "id": "phep-tru-trong-pham-vi-10",
+          "title": "Phép trừ trong phạm vi 10",
+          "ghiNho": [
+            "Phép trừ là bớt đi một số đồ vật, rồi xem còn lại bao nhiêu.",
+            "Trong \\(5 - 2 = 3\\): 5 là số bị trừ, 2 là số trừ, 3 là hiệu.",
+            "Trừ bằng cách đếm lùi. Với \\(7 - 3\\), em bắt đầu từ 7 rồi đếm lùi ba bước: 6, 5, 4.",
+            "Phép trừ ngược với phép cộng: vì \\(3 + 4 = 7\\) nên \\(7 - 4 = 3\\) và \\(7 - 3 = 4\\)."
+          ],
+          "problems": [
+            { "question": "Tính \\(9 - 3\\).", "expr": "9 - 3", "answer": "6", "simplest": false },
+            { "question": "Tính \\(7 - 5\\).", "expr": "7 - 5", "answer": "2", "simplest": false },
+            { "question": "Tính \\(10 - 4\\).", "expr": "10 - 4", "answer": "6", "simplest": false },
+            { "question": "Tính \\(6 - 6\\).", "expr": "6 - 6", "answer": "0", "simplest": false },
+            { "question": "Tính \\(8 - 0\\).", "expr": "8 - 0", "answer": "8", "simplest": false },
+            { "question": "Biết \\(2 + 5 = 7\\). Tính \\(7 - 5\\).", "expr": "7 - 5", "answer": "2", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(9 - \\, ? = 4\\)", "expr": "9 - 4", "answer": "5", "simplest": false },
+            { "question": "Hoa có 8 cái nhãn vở, Hoa cho em 3 cái. Hỏi Hoa còn lại mấy cái nhãn vở?", "expr": "8 - 3", "answer": "5", "simplest": false, "unit": "cái" },
+            { "question": "Trên cành cây có 10 con chim, có 6 con bay đi. Hỏi trên cành còn lại mấy con chim?", "expr": "10 - 6", "answer": "4", "simplest": false, "unit": "con" }
+          ]
+        },
+        {
+          "id": "cac-so-den-100",
+          "title": "Các số đến 100",
+          "ghiNho": [
+            "Số có hai chữ số gồm hàng chục và hàng đơn vị. Số 34 có 3 chục và 4 đơn vị.",
+            "Chữ số hàng chục chỉ số chục: trong số 57, chữ số 5 chỉ 50, nên \\(57 = 50 + 7\\).",
+            "So sánh hai số: so sánh hàng chục trước. Hàng chục bằng nhau thì mới so sánh hàng đơn vị.",
+            "Các số 10, 20, 30, …, 90 là số tròn chục vì hàng đơn vị là 0."
+          ],
+          "problems": [
+            { "question": "Số gồm 6 chục và 3 đơn vị là số nào?", "expr": "6 * 10 + 3", "answer": "63", "simplest": false },
+            { "question": "Số gồm 9 chục và 0 đơn vị là số nào?", "expr": "9 * 10", "answer": "90", "simplest": false },
+            { "question": "Số 76 có mấy chục?", "expr": "7", "answer": "7", "simplest": false },
+            { "question": "Chữ số 4 trong số 48 có giá trị bằng bao nhiêu?", "expr": "40", "answer": "40", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(85 = 80 + \\, ?\\)", "expr": "85 - 80", "answer": "5", "simplest": false },
+            { "question": "Trong hai số 47 và 74, số nào lớn hơn?", "expr": "74", "answer": "74", "simplest": false },
+            { "question": "Trong hai số 65 và 62, số nào bé hơn?", "expr": "62", "answer": "62", "simplest": false },
+            { "question": "Trong các số 45, 28, 91, 60, số nào bé nhất?", "expr": "28", "answer": "28", "simplest": false },
+            { "question": "Số tròn chục liền sau số 40 là số nào?", "expr": "50", "answer": "50", "simplest": false }
+          ]
+        }
       ]
     },
     {
