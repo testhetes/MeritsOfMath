@@ -75,6 +75,19 @@ _FIVE_GRAM_LEN = 5
 # passages both pass, but the duck case is the closest to failing: rank 3,
 # 0.442 against 0.464 for chia-het-va-chia-co-du. The floor's reasoning above
 # is unchanged.
+#
+# RE-MEASURED, 2026-09-17, after adding the four Nâng cao · Nhóm nhân tử
+# lessons (143 vectors, 24 accented cases, 24 unaccented variants, 6
+# negatives):
+#   accented positives                                    0.442 .. 0.742
+#   unaccented positives (where retrieved at all)         0.347 .. 0.572  (18/24)
+#   negatives (top score)                                 0.404 .. 0.502
+# All 24 accented cases pass on the first run; the four new ones rank 1, 1, 1
+# and 2 (nhan-mot-so-voi-mot-tong sits behind nhan-hai-phan-so). The new
+# lessons now outrank two older documents without pushing them out of the top
+# 3: bang-nhan-2-3-4-5 is rank 2 behind nhan-mot-so-voi-mot-tong, and
+# cong-tru-phan-so is rank 2 behind dat-thua-so-chung. The duck case is
+# unchanged at rank 3, 0.442.
 # --------------------------------------------------------------------------
 
 SCORE_FLOOR = 0.30
@@ -87,11 +100,15 @@ NEGATIVE_CEILING = 0.55
 # topK the chat endpoint uses, so the eval measures the same candidate set.
 EVAL_TOP_K = 5
 
-# Unaccented variants: 13 of 20 currently retrieve their document in the top
-# 3 (measured 2026-09-16; it was 11 of 16 before the fraction-multiplication
-# unit). A ratchet one below that records the real capability and catches a
-# regression, without overstating it.
-MIN_UNACCENTED_TOP3 = 12
+# Unaccented variants: 16 of 24 currently retrieve their document in the top
+# 3 (measured 2026-09-17). That is all four new Nâng cao variants plus 12 of
+# the 20 older ones, against 13 of 20 on 2026-09-16 (11 of 16 before the
+# fraction-multiplication unit). The older run kept no per-case table, so which
+# one dropped out is not known; two older variants now sit at rank 4:
+# bang-nhan-2-3-4-5, behind nhan-mot-so-voi-mot-tong, and
+# dien-tich-va-the-tich. A ratchet one below the count records the real
+# capability and catches a regression, without overstating it.
+MIN_UNACCENTED_TOP3 = 15
 
 
 def strip_accents(text):
@@ -349,8 +366,8 @@ def test_unaccented_variants_still_retrieve_their_document(score_table):
     re-run with its accents stripped.
 
     This is an aggregate ratchet rather than a per-case assertion on purpose:
-    unaccented retrieval genuinely does NOT work for all twenty (13/20 reach
-    the top 3 as of 2026-09-16), and asserting per case would mean hand-picking the ones
+    unaccented retrieval genuinely does NOT work for all of them (16/24 reach
+    the top 3 as of 2026-09-17), and asserting per case would mean hand-picking the ones
     that happen to work — exactly the cherry-picking that produced the
     discredited 0.45 probe. The ratchet records the real rate and fails if it
     drops; the printed table names every individual failure.
