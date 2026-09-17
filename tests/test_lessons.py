@@ -17,34 +17,59 @@ ROOT = pathlib.Path(__file__).parent.parent
 CONTENT_DIR = ROOT / "content"
 DATA = json.loads((ROOT / "lessons.json").read_text(encoding="utf-8"))
 
-ANSWER_RE = re.compile(r"^(0|[1-9]\d*)(/[1-9]\d*)?$")
+# A whole number, a fraction in lowest terms, or a decimal with a Vietnamese comma and no trailing
+# zeros: "12", "3/4", "4,25".
+ANSWER_RE = re.compile(r"^(0|[1-9]\d*)(/[1-9]\d*|,\d*[1-9])?$")
+DECIMAL_LITERAL = re.compile(r"^\d+\.\d+$")
 LESSON_KEYS = {"id", "title", "ghiNho", "problems"}
 PROBLEM_KEYS = {"question", "expr", "answer", "simplest", "unit"}
 
+# // and % let a chia có dư problem write its quotient and remainder as 17 // 5 and 17 % 5.
 _OPS = {
     ast.Add: lambda a, b: a + b,
     ast.Sub: lambda a, b: a - b,
     ast.Mult: lambda a, b: a * b,
     ast.Div: lambda a, b: a / b,
+    ast.FloorDiv: lambda a, b: Fraction(a // b),
+    ast.Mod: lambda a, b: a % b,
 }
 
 
 def evaluate(expr):
-    """Evaluate integers, + - * / and brackets exactly, as Fractions. Refuse anything else."""
+    """Evaluate integers, dotted decimals, + - * / // % and brackets exactly, as Fractions.
+    A decimal is read from its source text ("4.25"), never through a float. Refuse anything else."""
     def walk(node):
         if isinstance(node, ast.Expression):
             return walk(node.body)
         if isinstance(node, ast.Constant) and type(node.value) is int:
+            if "_" in ast.get_source_segment(expr, node):
+                raise ValueError(f"unsupported syntax in expr {expr!r}")
             return Fraction(node.value)
+        if isinstance(node, ast.Constant) and type(node.value) is float:
+            text = ast.get_source_segment(expr, node)
+            if not DECIMAL_LITERAL.match(text):
+                raise ValueError(f"unsupported number {text!r} in expr {expr!r}")
+            return Fraction(text)
         if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
             return _OPS[type(node.op)](walk(node.left), walk(node.right))
         raise ValueError(f"unsupported syntax in expr {expr!r}")
     return walk(ast.parse(expr, mode="eval"))
 
 
-def parse_answer(answer):
+def answer_value(answer):
+    """The exact value of a canonical answer: "12", "3/4" or "4,25"."""
+    if "," in answer:
+        return Fraction(answer.replace(",", "."))
     num, _, den = answer.partition("/")
-    return int(num), int(den) if den else 1
+    return Fraction(int(num), int(den) if den else 1)
+
+
+def canonical_answer(value):
+    """How a whole-number or fraction answer must be written. A lesson may give a value such as
+    17/4 as the decimal 4,25 instead; that case is checked by value."""
+    if value.denominator == 1:
+        return str(value.numerator)
+    return f"{value.numerator}/{value.denominator}"
 
 
 def _lessons():
@@ -61,9 +86,24 @@ def test_evaluate_is_exact_and_refuses_other_syntax():
     assert evaluate("2/3 * 4/5") == Fraction(8, 15)
     assert evaluate("(1/2 + 1/3) * 6") == 5
     assert evaluate("60 - 60 * 3/5") == 24
-    for bad in ("2**3", "abs(1)", "1.5 * 2", "x + 1", "-1"):
+    assert evaluate("4.25 + 1.5") == Fraction(23, 4)
+    assert evaluate("0.1 + 0.2") == Fraction(3, 10)
+    assert evaluate("17 // 5") == 3
+    assert evaluate("17 % 5") == 2
+    for bad in ("2**3", "abs(1)", "x + 1", "-1", "1e3", "1.", ".5", "1_000"):
         with pytest.raises(ValueError):
             evaluate(bad)
+
+
+def test_answer_shapes():
+    for good in ("0", "12", "3/4", "4,25", "0,5", "120,05"):
+        assert ANSWER_RE.match(good), good
+    for bad in ("012", "4,250", "4,0", "4,", ",5", "4.25", "3/0", "3/04", "-1"):
+        assert not ANSWER_RE.match(bad), bad
+    assert answer_value("4,25") == Fraction(17, 4)
+    assert answer_value("3/4") == Fraction(3, 4)
+    assert canonical_answer(Fraction(8, 1)) == "8"
+    assert canonical_answer(Fraction(6, 8)) == "3/4"
 
 
 def test_grades_are_one_to_five_in_order():
@@ -124,14 +164,19 @@ def test_problem_fields():
             assert isinstance(problem["unit"], str) and problem["unit"].strip(), where
 
 
-def test_every_answer_is_its_expression_in_lowest_terms():
+def test_every_answer_is_its_expression_in_canonical_form():
+    """A decimal answer's own shape (no trailing zeros, no "4,0") is held by ANSWER_RE in
+    test_problem_fields; here it only has to equal its expression."""
     wrong = []
     for lesson_id, i, problem in _problems():
-        num, den = parse_answer(problem["answer"])
         value = evaluate(problem["expr"])
-        if Fraction(num, den) != value or (num, den) != (value.numerator, value.denominator):
-            wrong.append(f"{lesson_id} problem {i + 1}: {problem['expr']} = {value}, "
-                         f"answer says {problem['answer']}")
+        answer = problem["answer"]
+        if "," in answer:
+            ok = answer_value(answer) == value
+        else:
+            ok = answer == canonical_answer(value)
+        if not ok:
+            wrong.append(f"{lesson_id} problem {i + 1}: {problem['expr']} = {value}, answer says {answer}")
     assert not wrong, "\n".join(wrong)
 
 
