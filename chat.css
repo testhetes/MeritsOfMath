@@ -19,14 +19,17 @@
     --lavender: #6650C4;    --lavender-bright: #B8A9FA;
     --cyan: #1B7675;        --cyan-bright: #7FDBDA;
 
-    --shadow-sm: 3px 3px 0 0 var(--ink);
-    --shadow: 5px 5px 0 0 var(--ink);
-    --shadow-lg: 8px 8px 0 0 var(--ink);
+    /* Softer than the outlines: pure near-white shadows were tiring to look at (2026-09-17). */
+    --shadow-color: #BDBCC8;
+    --shadow-sm: 3px 3px 0 0 var(--shadow-color);
+    --shadow: 5px 5px 0 0 var(--shadow-color);
+    --shadow-lg: 8px 8px 0 0 var(--shadow-color);
 
-    --font-display: 'Be Vietnam Pro', system-ui, sans-serif;
-    --font-heading: 'Space Grotesk', system-ui, sans-serif;
-    --font-body: 'Inter', system-ui, sans-serif;
-    --font-label: 'Space Mono', ui-monospace, monospace;
+    /* Baloo 2 + Nunito: chunky and rounded, chosen by the user for a tactile, heavier feel. */
+    --font-display: 'Baloo 2', system-ui, sans-serif;
+    --font-heading: 'Baloo 2', system-ui, sans-serif;
+    --font-body: 'Nunito', system-ui, sans-serif;
+    --font-label: 'Nunito', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -40,6 +43,7 @@ body {
     font-family: var(--font-body);
     background: var(--bg);
     color: var(--text);
+    font-weight: 600;
     /* The phone keyboard: see fitToVisibleViewport in js/chat.js. */
     height: var(--app-height, 100dvh);
     display: flex;
@@ -67,7 +71,7 @@ body {
     -webkit-text-fill-color: currentColor;
     box-shadow: var(--shadow-sm);
     font: inherit;
-    font-weight: 600;
+    font-weight: 800;
     cursor: pointer;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
@@ -87,7 +91,7 @@ body {
     border: 2px solid var(--ink);
     padding: 2px 7px;
     font-family: var(--font-label);
-    font-weight: 700;
+    font-weight: 800;
     font-size: 0.72rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -115,10 +119,11 @@ body {
     box-shadow: var(--shadow-sm);
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
+    line-height: 1;
 }
-.chat-header h1 { margin: 0; font-family: var(--font-heading); font-weight: 700; font-size: 1.1rem; }
-.chat-header .sub { margin: 0; font-family: var(--font-label); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.chat-header h1 { margin: 0; font-family: var(--font-heading); font-weight: 800; font-size: 1.3rem; line-height: 1; }
+.chat-header .sub { margin: 0; font-family: var(--font-label); font-weight: 800; font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; }
 .chat-header .spacer { flex: 1; }
 .icon-btn { width: 44px; height: 44px; padding: 0; font-size: 1.15rem; }
 
@@ -136,9 +141,9 @@ body {
     margin: 0;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 1.55rem;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    letter-spacing: 0;
 }
 .stickers { position: absolute; top: 0; right: 0; width: 110px; height: 108px; }
 .sticker {
@@ -166,15 +171,15 @@ body {
 @keyframes wiggle { 0%, 100% { transform: rotate(0) scale(1); } 30% { transform: rotate(-18deg) scale(1.15); } 70% { transform: rotate(18deg) scale(1.15); } }
 
 .grade-chips { display: flex; flex-wrap: wrap; gap: 10px; }
-.grade-chip { min-height: 44px; padding: 0 16px; font-size: 0.95rem; box-shadow: 2px 2px 0 0 var(--ink); }
+.grade-chip { min-height: 44px; padding: 0 16px; font-size: 0.95rem; box-shadow: 2px 2px 0 0 var(--shadow-color); }
 @media (hover: hover) {
-    .grade-chip:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 0 var(--ink); }
+    .grade-chip:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 0 var(--shadow-color); }
 }
 .grade-chip[aria-pressed="true"] { transform: translate(1px, 1px); box-shadow: 2px 2px 0 0 var(--bright); }
 .grade-chip[aria-pressed="true"]::after { content: ' ✓'; }
 .grade-chip:active { transform: translate(2px, 2px); box-shadow: none; }
 
-.home-heading { margin: 0; font-family: var(--font-heading); font-weight: 700; font-size: 1.05rem; }
+.home-heading { margin: 0; font-family: var(--font-heading); font-weight: 800; font-size: 1.2rem; }
 .lesson-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .lesson-card {
     display: flex;
@@ -186,12 +191,12 @@ body {
     text-align: left;
     background: var(--surface);
     color: var(--text);
-    box-shadow: var(--shadow);
+    box-shadow: 4px 4px 0 0 var(--shadow-color);
 }
 @media (hover: hover) {
-    .lesson-card:hover { box-shadow: 7px 7px 0 0 var(--ink); }
+    .lesson-card:hover { box-shadow: 6px 6px 0 0 var(--shadow-color); }
 }
-.lesson-title { font-size: 1rem; }
+.lesson-title { font-family: var(--font-heading); font-weight: 700; font-size: 1.15rem; line-height: 1.15; }
 
 /* ---- Messages ---- */
 .messages {
@@ -232,7 +237,7 @@ body {
    breaks they typed with Shift+Enter. */
 .msg.user { background: var(--blue); color: var(--on-fill); box-shadow: var(--shadow-sm); align-self: flex-end; white-space: pre-wrap; }
 .msg.error { background: var(--coral); color: var(--on-fill); box-shadow: var(--shadow-sm); align-self: flex-start; }
-.msg code { font-family: var(--font-label); background: var(--bg); border: 2px solid var(--ink); padding: 0 4px; }
+.msg code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--bg); border: 2px solid var(--ink); padding: 0 4px; }
 .msg pre { background: var(--bg); border: 2px solid var(--ink); padding: 8px 10px; overflow-x: auto; }
 .msg pre code { border: 0; padding: 0; }
 .msg table { border-collapse: collapse; }
@@ -312,11 +317,11 @@ body {
 }
 .answer-input:focus { outline: 3px solid var(--blue-bright); outline-offset: 3px; }
 .answer-input:disabled { opacity: 1; }
-.answer-unit { font-weight: 600; }
+.answer-unit { font-weight: 700; }
 .answer-input.shake { animation: shake 0.3s ease-in-out; }
 @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
-.feedback { margin: 0; align-self: flex-start; border: 3px solid var(--ink); padding: 6px 10px; color: var(--on-fill); font-weight: 600; }
+.feedback { margin: 0; align-self: flex-start; border: 3px solid var(--ink); padding: 6px 10px; color: var(--on-fill); font-weight: 700; }
 /* Empty feedback takes no space but stays in the page, so screen readers keep watching it
    (role="status") and announce the result when it appears. The negative margin cancels the card's
    gap above it. */
@@ -324,7 +329,7 @@ body {
 .feedback.correct { background: var(--green); }
 .feedback.not-simplest { background: var(--yellow); }
 .feedback.wrong, .feedback.invalid { background: var(--coral); }
-.finish { margin: 0 0 8px; font-family: var(--font-heading); font-weight: 700; }
+.finish { margin: 0 0 8px; font-family: var(--font-heading); font-weight: 800; }
 
 .confetti-bit { position: absolute; width: 10px; height: 10px; border: 2px solid var(--ink); pointer-events: none; animation: burst 0.9s ease-out forwards; }
 .confetti-bit.c0 { background: var(--yellow-bright); }
@@ -349,7 +354,7 @@ body {
 .mathpad.chat { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .mathpad-open .composer { padding-bottom: 12px; }
 .key { min-height: 40px; padding: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; }
-.key.word { font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; }
+.key.word { font-family: var(--font-body); font-weight: 800; font-size: 0.85rem; }
 /* The display face draws + − × : = small; operators get a larger size so they read at a glance. */
 .key.tone-lavender { font-size: 1.5rem; line-height: 1; }
 .frac-icon { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; vertical-align: middle; }

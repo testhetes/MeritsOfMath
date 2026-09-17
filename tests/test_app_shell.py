@@ -74,11 +74,22 @@ def test_colour_tokens_meet_contrast_minimums():
 
 
 def test_fonts_support_vietnamese():
-    """Outfit has no Vietnamese subset, so diacritics fell back to another font."""
+    """Baloo 2 + Nunito, chosen by the user on 2026-09-17 for a tactile, heavier feel; both have a
+    Vietnamese subset. The faces they replaced must not load any more."""
     html = (ROOT / "index.html").read_text(encoding="utf-8")
-    assert "Outfit" not in html
-    for family in ("Be+Vietnam+Pro", "Space+Grotesk", "Inter", "Space+Mono"):
+    for family in ("Baloo+2", "Nunito"):
         assert family in html, f"{family} is not loaded"
+    for retired in ("Outfit", "Be+Vietnam+Pro", "Space+Grotesk", "Space+Mono", "family=Inter"):
+        assert retired not in html, f"{retired} is still loaded"
+
+
+def test_shadows_are_softer_than_outlines():
+    """Pure near-white shadows were tiring to look at (2026-09-17)."""
+    colours = _root_colours()
+    assert "shadow-color" in colours
+    assert colours["shadow-color"].upper() != colours["ink"].upper()
+    css = (ROOT / "chat.css").read_text(encoding="utf-8")
+    assert not re.search(r"box-shadow:[^;]*var\(--ink\)", css), "a shadow still uses --ink"
 
 
 def test_layout_follows_the_on_screen_keyboard():
