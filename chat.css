@@ -368,6 +368,39 @@ body {
 .mathpad-toggle { min-width: 56px; padding: 0 6px; font-size: 0.78rem; line-height: 1.15; }
 .mathpad-toggle[aria-pressed="true"] { transform: translate(1px, 1px); box-shadow: 2px 2px 0 0 var(--bright); }
 
+/* Pop-up keypad for a mouse and keyboard (js/mathpad.js): a card anchored to its field. */
+.answer-row, .composer { position: relative; }
+.mathpad-popup {
+    position: absolute;
+    z-index: 5;
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    background: var(--surface);
+    border: 3px solid var(--ink);
+    box-shadow: var(--shadow-lg);
+}
+.mathpad-popup.answer { top: calc(100% + 14px); left: 0; width: 320px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mathpad-popup.chat { bottom: calc(100% + 14px); left: 16px; width: 440px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.mathpad-popup .key { min-height: 52px; }
+.mathpad-popup::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    width: 18px;
+    height: 18px;
+    background: var(--surface);
+    border-left: 3px solid var(--ink);
+    border-top: 3px solid var(--ink);
+}
+.mathpad-popup.answer::before { top: -12px; transform: rotate(45deg); }
+.mathpad-popup.chat::before { bottom: -12px; transform: rotate(225deg); }
+.keypad-btn { width: 48px; min-height: 48px; padding: 0; display: grid; place-items: center; }
+.keypad-icon { display: grid; grid-template-columns: repeat(3, 6px); gap: 3px; }
+.keypad-icon i { display: block; width: 6px; height: 6px; background: currentColor; }
+.keypad-btn[aria-pressed="true"] { transform: translate(1px, 1px); box-shadow: 2px 2px 0 0 var(--bright); }
+.answer-input:disabled + .keypad-btn { display: none; }
+
 @media (max-width: 600px) {
     .msg { max-width: 90%; }
     .messages { padding: 14px 12px; }
@@ -409,6 +442,7 @@ body {
     .composer textarea { font-size: 1.1rem; }
     .send-btn { padding: 0 26px; font-size: 1.1rem; }
     .mathpad-toggle { min-width: 72px; font-size: 0.9rem; }
+    .mathpad-popup.chat { left: max(40px, calc((100% - 820px) / 2)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,10 +1,12 @@
-// The maths keypad. In a practice answer box it replaces the phone keyboard (digits, the fraction
-// bar, Kiểm tra). In the chat box, the "123 ×÷" button swaps the phone keyboard for maths symbols
-// and "ABC" swaps back.
+// The maths keypad. On a phone or tablet it is docked under the chat box: in a practice answer box
+// it replaces the phone keyboard (digits, the fraction bar, Kiểm tra), and in the chat box the
+// "123 ×÷" button swaps the phone keyboard for maths symbols, with "ABC" swapping back. On a
+// computer with a mouse it is a pop-up card anchored to its field instead: a keyboard-wide keypad
+// looked out of place on a desktop (2026-09-17), and a real keyboard types into the field anyway.
 //
-// The keypad is a normal child of the page's flex column (index.html #mathpad), not an overlay, so
-// opening it shrinks the conversation above it the same way the phone keyboard does. Its keys never
-// take focus (pointerdown is cancelled), so the field being typed into keeps its caret.
+// The docked keypad is a normal child of the page's flex column (index.html #mathpad), not an
+// overlay, so opening it shrinks the conversation above it the same way the phone keyboard does.
+// Keys never take focus (pointerdown and mousedown are cancelled), so the field keeps its caret.
 window.MathPad = (function () {
     // An answer is a whole number or a/b, at most 6 digits a side (js/lessons.js parseAnswer).
     // Partial answers ("", "12", "12/") are allowed while typing; a leading "/" is not.
@@ -43,10 +45,18 @@ window.MathPad = (function () {
         ]
     };
 
+    // A fine pointer that can hover is a mouse or trackpad, so the device has a real keyboard.
+    const POPUP_QUERY = '(hover: hover) and (pointer: fine)';
+
     const els = {};
     let chatOn = false;
-    let answerInput = null;   // the practice answer box being typed into, if any
+    let answerInput = null;   // the answer box the docked keypad is typing into, if any
+    let popup = null;         // the open pop-up keypad: { node, button, field, mode }
     let pointerIsDown = false;
+
+    function usePopup() {
+        return Boolean(window.matchMedia && window.matchMedia(POPUP_QUERY).matches);
+    }
 
     // Closing the answer keypad moves the conversation: the keypad is taller than the chat box it
     // gives back. If that happened between a tap's press and its release, the release would land
@@ -98,10 +108,16 @@ window.MathPad = (function () {
         return node;
     }
 
+    function fillKeys(container, mode) {
+        container.textContent = '';
+        LAYOUTS[mode].forEach((spec) => container.appendChild(makeKey(spec)));
+    }
+
+    // ---- docked keypad (touch) ----
+
     function render(mode) {
-        els.pad.textContent = '';
+        fillKeys(els.pad, mode);
         els.pad.className = 'mathpad ' + mode;
-        LAYOUTS[mode].forEach((spec) => els.pad.appendChild(makeKey(spec)));
         els.pad.hidden = false;
         document.body.classList.add('mathpad-open');
     }
@@ -112,15 +128,39 @@ window.MathPad = (function () {
         document.body.classList.remove('mathpad-open');
     }
 
+    // ---- pop-up keypad (mouse and keyboard) ----
+
+    function openPopup(mode, host, button, field) {
+        closePopup();
+        const node = document.createElement('div');
+        node.className = 'mathpad-popup ' + mode;
+        node.setAttribute('role', 'group');
+        node.setAttribute('aria-label', 'Bàn phím toán');
+        fillKeys(node, mode);
+        host.appendChild(node);
+        popup = { node: node, button: button, field: field, mode: mode };
+        button.setAttribute('aria-pressed', 'true');
+        if (mode === 'chat') chatOn = true;
+        node.scrollIntoView({ block: 'nearest' });
+    }
+
+    function closePopup() {
+        if (!popup) return;
+        popup.node.remove();
+        popup.button.setAttribute('aria-pressed', 'false');
+        if (popup.mode === 'chat') chatOn = false;
+        popup = null;
+    }
+
     function press(spec) {
         // The answer box was removed from the page without a blur (not every browser fires one).
         if (answerInput && !answerInput.isConnected) release(answerInput);
-        const field = answerInput || els.input;
-        if (!answerInput) els.input.focus();
+        const field = popup ? popup.field : (answerInput || els.input);
+        if (document.activeElement !== field) field.focus();
         if (spec.action === 'delete') {
             deleteBack(field);
         } else if (spec.action === 'check') {
-            submitAnswer();
+            submitAnswer(field);
         } else if (spec.action === 'letters') {
             setChat(false);
         } else {
@@ -148,8 +188,8 @@ window.MathPad = (function () {
         field.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-    function submitAnswer() {
-        const form = answerInput && answerInput.form;
+    function submitAnswer(field) {
+        const form = field.form;
         if (!form) return;
         if (form.requestSubmit) {
             form.requestSubmit();
@@ -159,6 +199,16 @@ window.MathPad = (function () {
     }
 
     function setChat(on) {
+        if (usePopup()) {
+            if (on) {
+                openPopup('chat', els.composer, els.toggle, els.input);
+                els.onChatOpen();
+            } else {
+                closePopup();
+            }
+            els.input.focus();
+            return;
+        }
         chatOn = on;
         els.toggle.setAttribute('aria-pressed', String(on));
         if (on) {
@@ -176,11 +226,11 @@ window.MathPad = (function () {
         }
     }
 
-    // A practice answer box: the keypad replaces the phone keyboard while it has focus, and typing
-    // on a real keyboard is held to the same shape as the keys.
+    // A practice answer box. Typing on a real keyboard is held to the same shape as the keys. On
+    // touch, the docked keypad replaces the phone keyboard while the box has focus; with a mouse, a
+    // keypad button beside the box opens the pop-up.
     function attachAnswer(input) {
         if (!els.pad) return;   // init never ran: the box keeps the phone keyboard
-        input.setAttribute('inputmode', 'none');
         // Taken when the box gains focus, not now: a saved attempt is put back into the box after
         // it is attached, and an invalid key must not wipe that attempt.
         let lastValid = '';
@@ -192,8 +242,41 @@ window.MathPad = (function () {
             }
         });
         input.addEventListener('focus', () => {
-            if (input.disabled) return;
             lastValid = PARTIAL_ANSWER.test(input.value) ? input.value : '';
+        });
+        if (usePopup()) {
+            attachPopupButton(input);
+        } else {
+            attachDocked(input);
+        }
+    }
+
+    function attachPopupButton(input) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn tone-lavender keypad-btn';
+        button.setAttribute('aria-label', 'Mở bàn phím toán');
+        button.setAttribute('aria-pressed', 'false');
+        const icon = document.createElement('span');
+        icon.className = 'keypad-icon';
+        for (let i = 0; i < 6; i++) icon.appendChild(document.createElement('i'));
+        button.appendChild(icon);
+        keepFocus(button);
+        button.addEventListener('click', () => {
+            if (popup && popup.field === input) {
+                closePopup();
+            } else if (!input.disabled) {
+                openPopup('answer', input.parentElement, button, input);
+                input.focus();
+            }
+        });
+        input.insertAdjacentElement('afterend', button);
+    }
+
+    function attachDocked(input) {
+        input.setAttribute('inputmode', 'none');
+        input.addEventListener('focus', () => {
+            if (input.disabled) return;
             answerInput = input;
             els.composer.hidden = true;
             render('answer');
@@ -211,6 +294,7 @@ window.MathPad = (function () {
     // Stops typing into an answer box: on blur, and when a right answer locks the box (a disabled
     // field does not reliably fire blur).
     function release(input) {
+        if (popup && popup.field === input) closePopup();
         if (answerInput !== input) return;
         answerInput = null;
         els.composer.hidden = false;
@@ -221,9 +305,10 @@ window.MathPad = (function () {
         }
     }
 
-    // Drops any answer box the keypad was typing into, for js/chat.js to call before it rebuilds the
-    // conversation: the rebuilt cards are new elements, and the old box may never fire blur.
+    // For js/chat.js to call before it rebuilds the conversation: the rebuilt cards are new
+    // elements, and the old answer box may never fire blur. The chat keypad stays as it is.
     function reset() {
+        if (popup && popup.mode === 'answer') closePopup();
         if (answerInput) release(answerInput);
     }
 
@@ -235,9 +320,19 @@ window.MathPad = (function () {
         els.onChatOpen = options.onChatOpen || function () {};
         els.pad.setAttribute('role', 'group');
         els.pad.setAttribute('aria-label', 'Bàn phím toán');
-        document.addEventListener('pointerdown', () => { pointerIsDown = true; }, true);
+        document.addEventListener('pointerdown', (event) => {
+            pointerIsDown = true;
+            // A press outside the pop-up, its button and its field closes the pop-up.
+            if (popup && !popup.node.contains(event.target) && !popup.button.contains(event.target)
+                    && event.target !== popup.field) {
+                closePopup();
+            }
+        }, true);
         document.addEventListener('pointerup', () => { pointerIsDown = false; }, true);
         document.addEventListener('pointercancel', () => { pointerIsDown = false; }, true);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && popup) closePopup();
+        });
         els.toggle.hidden = false;
         keepFocus(els.toggle);
         els.toggle.addEventListener('click', () => setChat(!chatOn));

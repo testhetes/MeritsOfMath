@@ -112,3 +112,11 @@ def test_maths_keypad_is_wired_into_the_page():
     scripts = re.findall(r'<script src="(js/[a-z]+\.js)"></script>', html)
     assert scripts == ["js/mathpad.js", "js/lessons.js", "js/chat.js"], scripts
     assert "mathpad.js" in "".join(_app_shell())
+
+
+def test_keypad_pops_up_on_mouse_and_keyboard_devices():
+    """A full-width docked keypad looked out of place on a desktop (2026-09-17)."""
+    js = (ROOT / "js" / "mathpad.js").read_text(encoding="utf-8")
+    assert "(hover: hover) and (pointer: fine)" in js
+    css = (ROOT / "chat.css").read_text(encoding="utf-8")
+    assert ".mathpad-popup" in css and ".keypad-btn" in css

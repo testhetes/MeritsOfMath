@@ -306,8 +306,9 @@ window.Lessons = (function () {
         input.autocomplete = 'off';
         input.maxLength = 20;
         input.setAttribute('aria-label', 'Câu trả lời của em');
-        if (window.MathPad) window.MathPad.attachAnswer(input);
         form.appendChild(input);
+        // After the box is in its row: on a desktop MathPad puts its keypad button right after it.
+        if (window.MathPad) window.MathPad.attachAnswer(input);
         if (problem.unit) form.appendChild(el('span', 'answer-unit', problem.unit));
         const check = el('button', 'btn card-btn tone-green', 'Kiểm tra');
         check.type = 'submit';
