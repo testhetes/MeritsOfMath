@@ -364,10 +364,93 @@
     {
       "grade": 5,
       "lessons": [
-        { "id": "so-thap-phan", "title": "Số thập phân" },
-        { "id": "phep-tinh-voi-so-thap-phan", "title": "Cộng, trừ, nhân, chia số thập phân" },
-        { "id": "ti-so-phan-tram", "title": "Tỉ số phần trăm" },
-        { "id": "dien-tich-va-the-tich", "title": "Diện tích và thể tích" }
+        {
+          "id": "so-thap-phan",
+          "title": "Số thập phân",
+          "ghiNho": [
+            "Số thập phân gồm phần nguyên bên trái dấu phẩy và phần thập phân bên phải dấu phẩy. Trong 8,52 thì 8 là phần nguyên, 52 là phần thập phân.",
+            "Sau dấu phẩy, các chữ số lần lượt ở hàng phần mười, phần trăm, phần nghìn.",
+            "Số thập phân là cách viết khác của phân số có mẫu số 10, 100, 1000: \\(0{,}7 = \\dfrac{7}{10}\\) và \\(0{,}25 = \\dfrac{25}{100}\\).",
+            "Viết thêm chữ số 0 vào tận cùng bên phải phần thập phân thì giá trị không đổi: \\(2{,}5 = 2{,}50 = 2{,}500\\).",
+            "So sánh: so sánh phần nguyên trước, rồi lần lượt hàng phần mười, phần trăm. Ví dụ \\(6{,}7 > 6{,}25\\)."
+          ],
+          "problems": [
+            { "question": "Viết \\(\\dfrac{7}{10}\\) thành số thập phân.", "expr": "7/10", "answer": "0,7", "simplest": false },
+            { "question": "Viết \\(\\dfrac{25}{100}\\) thành số thập phân.", "expr": "25/100", "answer": "0,25", "simplest": false },
+            { "question": "Viết số thập phân gồm 8 đơn vị, 5 phần mười và 2 phần trăm.", "expr": "8 + 5/10 + 2/100", "answer": "8,52", "simplest": false },
+            { "question": "Viết 1 m 35 cm thành số đo có đơn vị là mét.", "expr": "1 + 35/100", "answer": "1,35", "simplest": false, "unit": "m" },
+            { "question": "Số nào lớn hơn: 4,9 hay 4,15?", "expr": "4.9", "answer": "4,9", "simplest": false },
+            { "question": "Trong các số 6,7; 6,25; 6,52, số nào bé nhất?", "expr": "6.25", "answer": "6,25", "simplest": false },
+            { "question": "Bỏ các chữ số 0 ở tận cùng bên phải phần thập phân để viết gọn số 3,500.", "expr": "3.500", "answer": "3,5", "simplest": false },
+            { "question": "Chữ số 7 trong số 3,472 có giá trị bằng phân số nào?", "expr": "7/100", "answer": "7/100", "simplest": false },
+            { "question": "Bạn An cao 1,4 m, bạn Bình cao 1,38 m. Hỏi bạn cao hơn cao bao nhiêu mét?", "expr": "1.4", "answer": "1,4", "simplest": false, "unit": "m" }
+          ]
+        },
+        {
+          "id": "phep-tinh-voi-so-thap-phan",
+          "title": "Cộng, trừ, nhân, chia số thập phân",
+          "ghiNho": [
+            "Cộng, trừ số thập phân: đặt tính sao cho các dấu phẩy thẳng cột, tính như số tự nhiên, rồi đặt dấu phẩy ở kết quả thẳng cột.",
+            "Nhân: nhân như số tự nhiên, rồi đếm cả hai thừa số có bao nhiêu chữ số ở phần thập phân và tách bấy nhiêu chữ số ở tích. \\(2{,}5 \\times 1{,}2 = 3\\)",
+            "Chia số thập phân cho số tự nhiên: chia hết phần nguyên thì đặt dấu phẩy vào thương, rồi chia tiếp. \\(9{,}6 : 4 = 2{,}4\\)",
+            "Nhân với 10, 100, 1000: chuyển dấu phẩy sang phải một, hai, ba chữ số. \\(3{,}45 \\times 100 = 345\\)",
+            "Chia cho 10, 100, 1000: chuyển dấu phẩy sang trái. \\(27{,}8 : 10 = 2{,}78\\)"
+          ],
+          "problems": [
+            { "question": "Tính \\(4{,}7 + 2{,}85\\).", "expr": "4.7 + 2.85", "answer": "7,55", "simplest": false },
+            { "question": "Tính \\(12{,}5 - 3{,}74\\).", "expr": "12.5 - 3.74", "answer": "8,76", "simplest": false },
+            { "question": "Tính \\(2{,}6 \\times 4\\).", "expr": "2.6 * 4", "answer": "10,4", "simplest": false },
+            { "question": "Tính \\(1{,}5 \\times 0{,}4\\).", "expr": "1.5 * 0.4", "answer": "0,6", "simplest": false },
+            { "question": "Tính \\(8{,}4 : 3\\).", "expr": "8.4 / 3", "answer": "2,8", "simplest": false },
+            { "question": "Tính \\(2{,}358 \\times 100\\).", "expr": "2.358 * 100", "answer": "235,8", "simplest": false },
+            { "question": "Tính \\(45{,}6 : 10\\).", "expr": "45.6 / 10", "answer": "4,56", "simplest": false },
+            { "question": "Tính \\(0{,}072 \\times 1000\\).", "expr": "0.072 * 1000", "answer": "72", "simplest": false },
+            { "question": "Mỗi chai nước chứa 1,25 l. Hỏi 6 chai như thế chứa bao nhiêu lít nước?", "expr": "1.25 * 6", "answer": "7,5", "simplest": false, "unit": "l" }
+          ]
+        },
+        {
+          "id": "ti-so-phan-tram",
+          "title": "Tỉ số phần trăm",
+          "ghiNho": [
+            "Tỉ số phần trăm cho biết một lượng chiếm bao nhiêu phần trong 100 phần: \\(25\\% = \\dfrac{25}{100}\\).",
+            "Tìm tỉ số phần trăm của hai số: lấy số thứ nhất chia cho số thứ hai, nhân thương với 100 rồi viết thêm kí hiệu %.",
+            "Tìm giá trị phần trăm của một số: lấy số đó nhân với số phần trăm rồi chia cho 100. 15% của 200 là \\(200 \\times 15 : 100 = 30\\).",
+            "\\(50\\% = 0{,}5\\) là một nửa, \\(25\\% = 0{,}25\\) là một phần tư, \\(100\\%\\) là toàn bộ."
+          ],
+          "problems": [
+            { "question": "Tìm 25% của 80.", "expr": "80 * 25 / 100", "answer": "20", "simplest": false },
+            { "question": "Tìm 15% của 200.", "expr": "200 * 15 / 100", "answer": "30", "simplest": false },
+            { "question": "Tìm tỉ số phần trăm của 24 và 40.", "expr": "24 / 40 * 100", "answer": "60", "simplest": false, "unit": "%" },
+            { "question": "Viết 0,35 thành tỉ số phần trăm.", "expr": "0.35 * 100", "answer": "35", "simplest": false, "unit": "%" },
+            { "question": "Viết \\(\\dfrac{3}{4}\\) thành tỉ số phần trăm.", "expr": "3/4 * 100", "answer": "75", "simplest": false, "unit": "%" },
+            { "question": "Lớp 5A có 40 học sinh, trong đó 45% là học sinh nữ. Hỏi lớp 5A có bao nhiêu học sinh nữ?", "expr": "40 * 45 / 100", "answer": "18", "simplest": false, "unit": "học sinh" },
+            { "question": "Một cửa hàng có 80 quyển sách, đã bán được 60 quyển. Hỏi số sách đã bán chiếm bao nhiêu phần trăm số sách của cửa hàng?", "expr": "60 / 80 * 100", "answer": "75", "simplest": false, "unit": "%" },
+            { "question": "Một chiếc áo giá 200 000 đồng, được giảm giá 15%. Hỏi mua chiếc áo đó phải trả bao nhiêu đồng?", "expr": "200000 - 200000 * 15 / 100", "answer": "170000", "simplest": false, "unit": "đồng" },
+            { "question": "Một mảnh vườn có diện tích 500 m², trong đó 40% diện tích dùng để trồng rau. Hỏi diện tích trồng rau là bao nhiêu mét vuông?", "expr": "500 * 40 / 100", "answer": "200", "simplest": false, "unit": "m²" }
+          ]
+        },
+        {
+          "id": "dien-tich-va-the-tich",
+          "title": "Diện tích và thể tích",
+          "ghiNho": [
+            "Diện tích hình chữ nhật bằng chiều dài nhân chiều rộng. Diện tích hình vuông bằng cạnh nhân cạnh.",
+            "Diện tích hình tam giác bằng đáy nhân chiều cao rồi chia cho 2: \\(10 \\times 6 : 2 = 30\\) (cm²).",
+            "Thể tích hình hộp chữ nhật bằng chiều dài nhân chiều rộng nhân chiều cao: \\(5 \\times 3 \\times 2 = 30\\) (dm³).",
+            "Diện tích dùng đơn vị vuông như cm², m². Thể tích dùng đơn vị khối như cm³, dm³, m³.",
+            "Chu vi là độ dài đường bao quanh, diện tích là phần bên trong, thể tích là phần không gian vật chiếm chỗ."
+          ],
+          "problems": [
+            { "question": "Tính diện tích hình chữ nhật có chiều dài 9 cm và chiều rộng 6 cm.", "expr": "9 * 6", "answer": "54", "simplest": false, "unit": "cm²" },
+            { "question": "Tính diện tích hình vuông có cạnh 8 cm.", "expr": "8 * 8", "answer": "64", "simplest": false, "unit": "cm²" },
+            { "question": "Tính diện tích hình tam giác có đáy 12 cm và chiều cao 5 cm.", "expr": "12 * 5 / 2", "answer": "30", "simplest": false, "unit": "cm²" },
+            { "question": "Tính thể tích hình hộp chữ nhật có chiều dài 6 cm, chiều rộng 4 cm và chiều cao 3 cm.", "expr": "6 * 4 * 3", "answer": "72", "simplest": false, "unit": "cm³" },
+            { "question": "Một hình chữ nhật có diện tích 48 cm² và chiều dài 8 cm. Tính chiều rộng của hình chữ nhật đó.", "expr": "48 / 8", "answer": "6", "simplest": false, "unit": "cm" },
+            { "question": "Tính diện tích hình chữ nhật có chiều dài 2,5 m và chiều rộng 4 m.", "expr": "2.5 * 4", "answer": "10", "simplest": false, "unit": "m²" },
+            { "question": "Tính diện tích hình tam giác có đáy 4,5 m và chiều cao 3 m.", "expr": "4.5 * 3 / 2", "answer": "6,75", "simplest": false, "unit": "m²" },
+            { "question": "Tính thể tích hình hộp chữ nhật có chiều dài 1,5 m, chiều rộng 1,2 m và chiều cao 2 m.", "expr": "1.5 * 1.2 * 2", "answer": "3,6", "simplest": false, "unit": "m³" },
+            { "question": "Một bể cá hình hộp chữ nhật dài 5 dm, rộng 3 dm, cao 4 dm. Tính thể tích bể cá đó.", "expr": "5 * 3 * 4", "answer": "60", "simplest": false, "unit": "dm³" }
+          ]
+        }
       ]
     }
   ],

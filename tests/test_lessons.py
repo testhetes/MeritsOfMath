@@ -159,25 +159,15 @@ def test_extras_are_a_nang_cao_tab_of_practice_lessons():
                 assert WHOLE_NUMBER_RE.match(problem["answer"]), (lesson["id"], i + 1, problem["answer"])
 
 
-# Lessons still waiting for their Ghi nhớ and practice. Each grade's ids leave this set as its
-# practice is written (content pass, 2026-09-17); every other lesson must have both.
-AWAITING_PRACTICE = {
-    "so-thap-phan", "phep-tinh-voi-so-thap-phan", "ti-so-phan-tram", "dien-tich-va-the-tich",
-}
-
-
 def test_lesson_fields():
     for _, lesson in _lessons():
         assert set(lesson) <= LESSON_KEYS, (lesson["id"], set(lesson) - LESSON_KEYS)
         assert lesson["title"].strip()
-        # A lesson with content has both cards; the home screen tags it "Ghi nhớ · Luyện tập".
-        waiting = lesson["id"] in AWAITING_PRACTICE
-        assert ("ghiNho" not in lesson and "problems" not in lesson) if waiting else \
-            ("ghiNho" in lesson and "problems" in lesson), lesson["id"]
-        if "ghiNho" in lesson:
-            assert 3 <= len(lesson["ghiNho"]) <= 5, lesson["id"]
-            assert all(isinstance(b, str) and b.strip() for b in lesson["ghiNho"]), lesson["id"]
-            assert len(lesson["problems"]) == 9, lesson["id"]
+        # Every lesson in every grade and extra has both cards (content pass, 2026-09-17).
+        assert "ghiNho" in lesson and "problems" in lesson, lesson["id"]
+        assert 3 <= len(lesson["ghiNho"]) <= 5, lesson["id"]
+        assert all(isinstance(b, str) and b.strip() for b in lesson["ghiNho"]), lesson["id"]
+        assert len(lesson["problems"]) == 9, lesson["id"]
 
 
 def test_no_grade_has_a_highlight_unit():
