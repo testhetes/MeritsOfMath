@@ -207,8 +207,49 @@
     {
       "grade": 4,
       "lessons": [
-        { "id": "phan-so-va-cach-doc", "title": "Phân số và cách đọc phân số" },
-        { "id": "cong-tru-phan-so", "title": "Cộng và trừ phân số" },
+        {
+          "id": "phan-so-va-cach-doc",
+          "title": "Phân số và cách đọc phân số",
+          "ghiNho": [
+            "Phân số chỉ một phần của một vật đã được chia thành các phần bằng nhau. Các phần phải bằng nhau.",
+            "Trong phân số \\(\\dfrac{3}{4}\\): mẫu số 4 cho biết chia thành 4 phần bằng nhau, tử số 3 cho biết lấy 3 phần.",
+            "Tử số bằng mẫu số thì phân số bằng 1: \\(\\dfrac{4}{4} = 1\\).",
+            "Hai phân số cùng mẫu số: phân số nào có tử số lớn hơn thì lớn hơn. Ví dụ \\(\\dfrac{3}{5} > \\dfrac{2}{5}\\).",
+            "Nhân cả tử số và mẫu số với cùng một số khác 0 thì được phân số bằng nó: \\(\\dfrac{1}{2} = \\dfrac{2}{4} = \\dfrac{3}{6}\\)."
+          ],
+          "problems": [
+            { "question": "Mẹ cắt một cái bánh thành 8 phần bằng nhau, em ăn 3 phần. Em đã ăn mấy phần cái bánh? Em viết câu trả lời bằng phân số.", "expr": "3/8", "answer": "3/8", "simplest": false },
+            { "question": "Viết phân số: năm phần chín.", "expr": "5/9", "answer": "5/9", "simplest": false },
+            { "question": "Mẫu số của phân số \\(\\dfrac{5}{8}\\) là bao nhiêu?", "expr": "8", "answer": "8", "simplest": false },
+            { "question": "Phân số \\(\\dfrac{7}{7}\\) bằng số tự nhiên nào?", "expr": "7/7", "answer": "1", "simplest": false },
+            { "question": "Phân số nào lớn hơn: \\(\\dfrac{4}{7}\\) hay \\(\\dfrac{6}{7}\\)?", "expr": "6/7", "answer": "6/7", "simplest": false },
+            { "question": "Phân số nào bé hơn: \\(\\dfrac{5}{9}\\) hay \\(\\dfrac{2}{9}\\)?", "expr": "2/9", "answer": "2/9", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(\\dfrac{1}{2} = \\dfrac{?}{8}\\)", "expr": "8 / 2", "answer": "4", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(\\dfrac{2}{3} = \\dfrac{6}{?}\\)", "expr": "3 * 3", "answer": "9", "simplest": false },
+            { "question": "Một thanh sô-cô-la được chia thành 10 miếng bằng nhau. An ăn 2 miếng, Bình ăn 5 miếng. Hỏi hai bạn đã ăn mấy phần thanh sô-cô-la? Em viết câu trả lời bằng phân số.", "expr": "2/10 + 5/10", "answer": "7/10", "simplest": false }
+          ]
+        },
+        {
+          "id": "cong-tru-phan-so",
+          "title": "Cộng và trừ phân số",
+          "ghiNho": [
+            "Cộng hoặc trừ hai phân số cùng mẫu số: cộng hoặc trừ hai tử số, giữ nguyên mẫu số. \\(\\dfrac{2}{7} + \\dfrac{3}{7} = \\dfrac{5}{7}\\)",
+            "Hai phân số khác mẫu số: quy đồng mẫu số trước, rồi mới cộng hoặc trừ. \\(\\dfrac{1}{2} + \\dfrac{1}{3} = \\dfrac{3}{6} + \\dfrac{2}{6} = \\dfrac{5}{6}\\)",
+            "Không cộng tử số với tử số và mẫu số với mẫu số: \\(\\dfrac{1}{2} + \\dfrac{1}{3}\\) không bằng \\(\\dfrac{2}{5}\\).",
+            "Tính xong, rút gọn kết quả nếu có thể."
+          ],
+          "problems": [
+            { "question": "Tính \\(\\dfrac{2}{9} + \\dfrac{5}{9}\\).", "expr": "2/9 + 5/9", "answer": "7/9", "simplest": false },
+            { "question": "Tính \\(\\dfrac{3}{8} + \\dfrac{4}{8}\\).", "expr": "3/8 + 4/8", "answer": "7/8", "simplest": false },
+            { "question": "Tính \\(\\dfrac{6}{7} - \\dfrac{2}{7}\\).", "expr": "6/7 - 2/7", "answer": "4/7", "simplest": false },
+            { "question": "Tính rồi rút gọn kết quả: \\(\\dfrac{5}{9} - \\dfrac{2}{9}\\).", "expr": "5/9 - 2/9", "answer": "1/3", "simplest": true },
+            { "question": "Tính \\(\\dfrac{1}{4} + \\dfrac{1}{2}\\).", "expr": "1/4 + 1/2", "answer": "3/4", "simplest": false },
+            { "question": "Tính rồi rút gọn kết quả: \\(\\dfrac{5}{6} - \\dfrac{1}{3}\\).", "expr": "5/6 - 1/3", "answer": "1/2", "simplest": true },
+            { "question": "Tính \\(\\dfrac{3}{8} + \\dfrac{5}{8}\\).", "expr": "3/8 + 5/8", "answer": "1", "simplest": false },
+            { "question": "Một sợi dây, lần đầu cắt đi \\(\\dfrac{2}{5}\\) sợi dây, lần sau cắt đi \\(\\dfrac{1}{10}\\) sợi dây. Hỏi cả hai lần cắt đi mấy phần sợi dây?", "expr": "2/5 + 1/10", "answer": "1/2", "simplest": false },
+            { "question": "Một bể đang chứa \\(\\dfrac{7}{8}\\) bể nước. Người ta dùng hết \\(\\dfrac{1}{4}\\) bể nước. Hỏi trong bể còn lại mấy phần bể nước?", "expr": "7/8 - 1/4", "answer": "5/8", "simplest": false }
+          ]
+        },
         {
           "id": "nhan-hai-phan-so",
           "title": "Nhân hai phân số",
@@ -296,7 +337,28 @@
             { "question": "Một cửa hàng có 80 quả trứng. Buổi sáng bán \\(\\dfrac{1}{4}\\) số trứng, buổi chiều bán \\(\\dfrac{2}{5}\\) số trứng. Hỏi cả ngày cửa hàng bán được bao nhiêu quả trứng?", "expr": "80 * 1/4 + 80 * 2/5", "answer": "52", "simplest": false, "unit": "quả" }
           ]
         },
-        { "id": "dau-hieu-chia-het", "title": "Dấu hiệu chia hết cho 2, 3, 5, 9" }
+        {
+          "id": "dau-hieu-chia-het",
+          "title": "Dấu hiệu chia hết cho 2, 3, 5, 9",
+          "ghiNho": [
+            "Số có chữ số tận cùng là 0, 2, 4, 6, 8 thì chia hết cho 2.",
+            "Số có chữ số tận cùng là 0 hoặc 5 thì chia hết cho 5. Tận cùng là 0 thì chia hết cho cả 2 và 5.",
+            "Số có tổng các chữ số chia hết cho 9 thì chia hết cho 9. Ví dụ 738 có \\(7 + 3 + 8 = 18\\).",
+            "Số có tổng các chữ số chia hết cho 3 thì chia hết cho 3. Ví dụ 471 có \\(4 + 7 + 1 = 12\\).",
+            "Số chia hết cho 9 thì cũng chia hết cho 3, nhưng số chia hết cho 3 chưa chắc chia hết cho 9."
+          ],
+          "problems": [
+            { "question": "Số lớn nhất có hai chữ số chia hết cho 9 là số nào?", "expr": "99", "answer": "99", "simplest": false },
+            { "question": "Số bé nhất có ba chữ số chia hết cho 5 là số nào?", "expr": "100", "answer": "100", "simplest": false },
+            { "question": "Số bé nhất có hai chữ số chia hết cho cả 2 và 5 là số nào?", "expr": "10", "answer": "10", "simplest": false },
+            { "question": "Trong các số 45, 68, 91, 123, có bao nhiêu số chia hết cho 3?", "expr": "2", "answer": "2", "simplest": false },
+            { "question": "Trong các số 108, 207, 315, 412, có bao nhiêu số chia hết cho 9?", "expr": "3", "answer": "3", "simplest": false },
+            { "question": "Tìm chữ số thích hợp điền vào chỗ dấu hỏi để số 7?5 chia hết cho 9.", "expr": "18 - 7 - 5", "answer": "6", "simplest": false },
+            { "question": "Từ 1 đến 30 có bao nhiêu số chia hết cho 5?", "expr": "30 / 5", "answer": "6", "simplest": false },
+            { "question": "Số lớn nhất có hai chữ số chia hết cho cả 2 và 3 là số nào?", "expr": "96", "answer": "96", "simplest": false },
+            { "question": "Lan có một số viên bi ít hơn 20 viên. Số bi của Lan chia hết cho cả 2 và 9. Hỏi Lan có bao nhiêu viên bi?", "expr": "18", "answer": "18", "simplest": false, "unit": "viên" }
+          ]
+        }
       ]
     },
     {
