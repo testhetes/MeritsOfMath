@@ -176,7 +176,7 @@ window.Lessons = (function () {
     }
 
     const GRADE_TONES = { 1: 'coral', 2: 'orange', 3: 'yellow', 4: 'green', 5: 'blue' };
-    const STICKERS = ['½', '×', '÷'];
+    const STICKERS = ['½', '×', '÷', '='];   // the fourth shows on desktop only (chat.css)
 
     function currentGrade() {
         let wanted = data.defaultGrade;
@@ -203,6 +203,7 @@ window.Lessons = (function () {
 
         const top = el('div', 'home-top');
         top.appendChild(el('p', 'home-greeting', 'Chào em! Hôm nay em muốn học bài nào?'));
+        top.appendChild(el('p', 'home-sub', 'Chọn lớp của em, rồi chọn một bài để bắt đầu.'));
         const stickers = el('div', 'stickers');
         stickers.setAttribute('aria-hidden', 'true');
         STICKERS.forEach((symbol) => {
