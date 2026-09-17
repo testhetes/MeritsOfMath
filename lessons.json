@@ -157,6 +157,69 @@
             { "question": "Mỗi hộp có 12 bút chì xanh và 8 bút chì đỏ. Hỏi 6 hộp như thế có tất cả bao nhiêu chiếc bút chì?", "expr": "6 * (12 + 8)", "answer": "120", "simplest": false, "unit": "chiếc" },
             { "question": "Mỗi gói kẹo có 24 cái. An mua 11 gói. Hỏi An có bao nhiêu cái kẹo?", "expr": "24 * 11", "answer": "264", "simplest": false, "unit": "cái" }
           ]
+        },
+        {
+          "id": "dat-thua-so-chung",
+          "title": "Đặt thừa số chung ra ngoài",
+          "ghiNho": [
+            "Hai tích có chung một thừa số thì đưa thừa số đó ra ngoài ngoặc: \\(a \\times b + a \\times c = a \\times (b + c)\\)",
+            "Với phép trừ cũng vậy: \\(a \\times b - a \\times c = a \\times (b - c)\\)",
+            "Thừa số chung có thể đứng trước hoặc đứng sau trong mỗi tích: \\(18 \\times 25 + 82 \\times 25 = (18 + 82) \\times 25\\)",
+            "Cách này nhanh nhất khi phần trong ngoặc ra số tròn chục, tròn trăm, tròn nghìn."
+          ],
+          "problems": [
+            { "question": "Tính nhanh: \\(43 \\times 27 + 43 \\times 73\\).", "expr": "43 * 27 + 43 * 73", "answer": "4300", "simplest": false },
+            { "question": "Tính nhanh: \\(26 \\times 64 + 26 \\times 36\\).", "expr": "26 * 64 + 26 * 36", "answer": "2600", "simplest": false },
+            { "question": "Tính nhanh: \\(58 \\times 17 - 58 \\times 7\\).", "expr": "58 * 17 - 58 * 7", "answer": "580", "simplest": false },
+            { "question": "Tính nhanh: \\(125 \\times 13 - 125 \\times 5\\).", "expr": "125 * 13 - 125 * 5", "answer": "1000", "simplest": false },
+            { "question": "Tính nhanh: \\(19 \\times 64 + 36 \\times 19\\).", "expr": "19 * 64 + 36 * 19", "answer": "1900", "simplest": false },
+            { "question": "Tính nhanh: \\(234 \\times 45 - 234 \\times 35\\).", "expr": "234 * 45 - 234 * 35", "answer": "2340", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(48 \\times 25 + 48 \\times 75 = 48 \\times \\, ?\\)", "expr": "25 + 75", "answer": "100", "simplest": false },
+            { "question": "Buổi sáng cửa hàng bán 35 bao gạo, buổi chiều bán 65 bao gạo. Mỗi bao nặng 25 kg. Hỏi cả ngày cửa hàng bán được bao nhiêu ki-lô-gam gạo?", "expr": "35 * 25 + 65 * 25", "answer": "2500", "simplest": false, "unit": "kg" },
+            { "question": "Mỗi vé xem xiếc giá 45 nghìn đồng. Lớp 4A mua 28 vé, lớp 4B mua 22 vé. Hỏi hai lớp trả tất cả bao nhiêu nghìn đồng?", "expr": "45 * 28 + 45 * 22", "answer": "2250", "simplest": false, "unit": "nghìn đồng" }
+          ]
+        },
+        {
+          "id": "thua-so-chung-an",
+          "title": "Tìm thừa số chung ẩn",
+          "ghiNho": [
+            "Một số đứng một mình bằng chính số đó nhân với 1: \\(45 = 45 \\times 1\\).",
+            "Một số gấp mấy lần số kia có thể tách thành tích để lộ thừa số chung: \\(50 \\times 32 = 25 \\times 2 \\times 32 = 25 \\times 64\\).",
+            "Có ba số hạng trở lên thì mọi thừa số còn lại đều vào trong ngoặc: \\(18 \\times 7 + 18 \\times 2 + 18 = 18 \\times (7 + 2 + 1)\\)",
+            "Trước khi nhóm, kiểm tra xem thừa số chung có mặt ở tất cả các số hạng chưa."
+          ],
+          "problems": [
+            { "question": "Tính nhanh: \\(36 \\times 99 + 36\\).", "expr": "36 * 99 + 36", "answer": "3600", "simplest": false },
+            { "question": "Tính nhanh: \\(72 \\times 101 - 72\\).", "expr": "72 * 101 - 72", "answer": "7200", "simplest": false },
+            { "question": "Tính nhanh: \\(15 \\times 7 + 15 \\times 2 + 15\\).", "expr": "15 * 7 + 15 * 2 + 15", "answer": "150", "simplest": false },
+            { "question": "Tính nhanh: \\(25 \\times 46 + 50 \\times 27\\).", "expr": "25 * 46 + 50 * 27", "answer": "2500", "simplest": false },
+            { "question": "Tính nhanh: \\(12 \\times 35 + 24 \\times 30 + 12 \\times 5\\).", "expr": "12 * 35 + 24 * 30 + 12 * 5", "answer": "1200", "simplest": false },
+            { "question": "Tính nhanh: \\(47 \\times 8 + 47 + 47\\).", "expr": "47 * 8 + 47 + 47", "answer": "470", "simplest": false },
+            { "question": "Tính nhanh: \\(9 \\times 58 + 9 \\times 41 + 9\\).", "expr": "9 * 58 + 9 * 41 + 9", "answer": "900", "simplest": false },
+            { "question": "Tính nhanh: \\(20 \\times 48 + 40 \\times 26\\).", "expr": "20 * 48 + 40 * 26", "answer": "2000", "simplest": false },
+            { "question": "Mỗi quyển truyện giá 18 nghìn đồng. An mua 6 quyển, Bình mua 3 quyển, Chi mua 1 quyển. Hỏi cả ba bạn trả tất cả bao nhiêu nghìn đồng?", "expr": "18 * 6 + 18 * 3 + 18 * 1", "answer": "180", "simplest": false, "unit": "nghìn đồng" }
+          ]
+        },
+        {
+          "id": "bai-toan-nhom-nhan-tu",
+          "title": "Bài toán có lời văn dùng nhóm nhân tử",
+          "ghiNho": [
+            "Tìm lượng lặp lại trong đề: cùng một giá tiền, cùng số đồ vật trong mỗi hàng, mỗi hộp.",
+            "Viết phép tính cho cả bài trước khi tính.",
+            "Đặt lượng lặp lại ra ngoài ngoặc, các số lượng khác vào trong ngoặc, rồi tính nhanh.",
+            "Chỉ nhóm khi đúng là cùng một lượng lặp lại. Đáp số luôn có đơn vị."
+          ],
+          "problems": [
+            { "question": "Mỗi hộp bút có 12 chiếc. Lớp 4A nhận 37 hộp, lớp 4B nhận 63 hộp. Hỏi hai lớp nhận được tất cả bao nhiêu chiếc bút?", "expr": "12 * 37 + 12 * 63", "answer": "1200", "simplest": false, "unit": "chiếc" },
+            { "question": "Mỗi xe chở 45 bao xi măng. Buổi sáng có 13 xe, buổi chiều có 7 xe. Hỏi cả ngày các xe chở được bao nhiêu bao xi măng?", "expr": "45 * 13 + 45 * 7", "answer": "900", "simplest": false, "unit": "bao" },
+            { "question": "Mỗi mét vải giá 35 nghìn đồng. Mẹ mua 16 m vải hoa và 4 m vải trắng. Hỏi mẹ phải trả bao nhiêu nghìn đồng?", "expr": "35 * 16 + 35 * 4", "answer": "700", "simplest": false, "unit": "nghìn đồng" },
+            { "question": "Mỗi thùng có 24 chai nước. Kho có 38 thùng, người ta đã chuyển đi 18 thùng. Hỏi trong kho còn lại bao nhiêu chai nước?", "expr": "24 * 38 - 24 * 18", "answer": "480", "simplest": false, "unit": "chai" },
+            { "question": "Cô chia kẹo cho cả lớp, mỗi bạn 15 cái. Tổ 1 có 9 bạn, tổ 2 có 8 bạn, tổ 3 có 3 bạn. Hỏi cô đã chia tất cả bao nhiêu cái kẹo?", "expr": "15 * 9 + 15 * 8 + 15 * 3", "answer": "300", "simplest": false, "unit": "cái" },
+            { "question": "Vé người lớn giá 50 nghìn đồng, vé trẻ em giá 25 nghìn đồng. Một đoàn có 32 người lớn và 36 trẻ em. Hỏi cả đoàn trả bao nhiêu nghìn đồng tiền vé?", "expr": "50 * 32 + 25 * 36", "answer": "2500", "simplest": false, "unit": "nghìn đồng" },
+            { "question": "Hai mảnh vườn hình chữ nhật đều có chiều rộng 15 m. Mảnh thứ nhất dài 46 m, mảnh thứ hai dài 54 m. Tính tổng diện tích hai mảnh vườn.", "expr": "46 * 15 + 54 * 15", "answer": "1500", "simplest": false, "unit": "m²" },
+            { "question": "Mỗi bao gạo nặng 50 kg. Kho có 128 bao gạo, đã xuất đi 28 bao. Hỏi trong kho còn lại bao nhiêu ki-lô-gam gạo?", "expr": "50 * 128 - 50 * 28", "answer": "5000", "simplest": false, "unit": "kg" },
+            { "question": "Mỗi bạn góp 5 quyển vở để tặng các em nhỏ. Lớp 4A có 32 bạn, lớp 4B có 35 bạn, lớp 4C có 33 bạn. Hỏi ba lớp góp được bao nhiêu quyển vở?", "expr": "5 * 32 + 5 * 35 + 5 * 33", "answer": "500", "simplest": false, "unit": "quyển" }
+          ]
         }
       ]
     }

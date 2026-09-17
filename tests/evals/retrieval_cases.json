@@ -82,5 +82,17 @@
   {
     "query": "Lấy 6 nhân với tổng của 10 và 3 thì có được tách ra nhân từng số rồi cộng lại không ạ?",
     "expect_doc_id": "nhan-mot-so-voi-mot-tong"
+  },
+  {
+    "query": "Hai tích cùng có chung số 37 thì gộp lại thế nào để tính cho nhanh ạ?",
+    "expect_doc_id": "dat-thua-so-chung"
+  },
+  {
+    "query": "Bài bắt tính nhanh 45 nhân 99 rồi cộng thêm 45 mà em không thấy số chung ở đâu thì làm sao?",
+    "expect_doc_id": "thua-so-chung-an"
+  },
+  {
+    "query": "Đề toán kể mẹ mua cùng một món đồ hai lần với giá như nhau, có cách nào tính tổng tiền nhanh không?",
+    "expect_doc_id": "bai-toan-nhom-nhan-tu"
   }
 ]
