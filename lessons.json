@@ -139,9 +139,69 @@
     {
       "grade": 3,
       "lessons": [
-        { "id": "bang-nhan-chia-6-7-8-9", "title": "Bảng nhân và bảng chia 6, 7, 8, 9" },
-        { "id": "chia-het-va-chia-co-du", "title": "Phép chia hết và phép chia có dư" },
-        { "id": "chu-vi-hinh-chu-nhat-hinh-vuong", "title": "Chu vi hình chữ nhật và hình vuông" }
+        {
+          "id": "bang-nhan-chia-6-7-8-9",
+          "title": "Bảng nhân và bảng chia 6, 7, 8, 9",
+          "ghiNho": [
+            "Mỗi phép nhân cho em hai phép chia: vì \\(7 \\times 8 = 56\\) nên \\(56 : 7 = 8\\) và \\(56 : 8 = 7\\).",
+            "Gặp \\(56 : 8\\), em tự hỏi: 8 nhân với mấy thì được 56?",
+            "Trong bảng nhân 9, tổng hai chữ số của tích luôn bằng 9, ví dụ \\(9 \\times 7 = 63\\) và \\(6 + 3 = 9\\).",
+            "Phép chia giúp tìm một thừa số khi đã biết tích và thừa số kia."
+          ],
+          "problems": [
+            { "question": "Tính \\(6 \\times 7\\).", "expr": "6 * 7", "answer": "42", "simplest": false },
+            { "question": "Tính \\(8 \\times 9\\).", "expr": "8 * 9", "answer": "72", "simplest": false },
+            { "question": "Tính \\(9 \\times 6\\).", "expr": "9 * 6", "answer": "54", "simplest": false },
+            { "question": "Tính \\(48 : 6\\).", "expr": "48 / 6", "answer": "8", "simplest": false },
+            { "question": "Tính \\(63 : 7\\).", "expr": "63 / 7", "answer": "9", "simplest": false },
+            { "question": "Tính \\(56 : 8\\).", "expr": "56 / 8", "answer": "7", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(? \\times 9 = 81\\)", "expr": "81 / 9", "answer": "9", "simplest": false },
+            { "question": "Mỗi hộp có 8 cái bánh. Hỏi 7 hộp như thế có tất cả bao nhiêu cái bánh?", "expr": "8 * 7", "answer": "56", "simplest": false, "unit": "cái" },
+            { "question": "Có 54 quyển sách xếp đều vào 6 ngăn tủ. Hỏi mỗi ngăn có bao nhiêu quyển sách?", "expr": "54 / 6", "answer": "9", "simplest": false, "unit": "quyển" }
+          ]
+        },
+        {
+          "id": "chia-het-va-chia-co-du",
+          "title": "Phép chia hết và phép chia có dư",
+          "ghiNho": [
+            "Phép chia hết là phép chia có số dư bằng 0: \\(12 : 3 = 4\\).",
+            "Phép chia có dư còn thừa lại một ít: \\(13 : 3 = 4\\) (dư 1).",
+            "Số dư luôn bé hơn số chia. Nếu số dư bằng hoặc lớn hơn số chia thì em còn chia tiếp được.",
+            "Kiểm tra: thương nhân số chia rồi cộng số dư phải được số bị chia: \\(4 \\times 3 + 1 = 13\\)."
+          ],
+          "problems": [
+            { "question": "Tính \\(35 : 5\\).", "expr": "35 // 5", "answer": "7", "simplest": false },
+            { "question": "Trong phép chia \\(23 : 4\\), thương là bao nhiêu?", "expr": "23 // 4", "answer": "5", "simplest": false },
+            { "question": "Trong phép chia \\(23 : 4\\), số dư là bao nhiêu?", "expr": "23 % 4", "answer": "3", "simplest": false },
+            { "question": "Trong phép chia \\(47 : 6\\), thương là bao nhiêu?", "expr": "47 // 6", "answer": "7", "simplest": false },
+            { "question": "Trong phép chia \\(47 : 6\\), số dư là bao nhiêu?", "expr": "47 % 6", "answer": "5", "simplest": false },
+            { "question": "Phép chia \\(36 : 4\\) có số dư là bao nhiêu?", "expr": "36 % 4", "answer": "0", "simplest": false },
+            { "question": "Trong một phép chia cho 7, số dư lớn nhất có thể là bao nhiêu?", "expr": "7 - 1", "answer": "6", "simplest": false },
+            { "question": "Có 29 quả táo chia đều vào 3 đĩa. Hỏi mỗi đĩa có mấy quả táo?", "expr": "29 // 3", "answer": "9", "simplest": false, "unit": "quả" },
+            { "question": "Có 29 quả táo chia đều vào 3 đĩa, mỗi đĩa được nhiều quả nhất có thể. Hỏi còn thừa mấy quả táo?", "expr": "29 % 3", "answer": "2", "simplest": false, "unit": "quả" }
+          ]
+        },
+        {
+          "id": "chu-vi-hinh-chu-nhat-hinh-vuong",
+          "title": "Chu vi hình chữ nhật và hình vuông",
+          "ghiNho": [
+            "Chu vi là độ dài đường bao quanh một hình.",
+            "Chu vi hình chữ nhật bằng chiều dài cộng chiều rộng, rồi nhân với 2: \\((8 + 5) \\times 2 = 26\\) (m).",
+            "Chu vi hình vuông bằng độ dài một cạnh nhân với 4: \\(30 \\times 4 = 120\\) (cm).",
+            "Các số đo phải cùng đơn vị mới tính được, và kết quả luôn có đơn vị đo độ dài."
+          ],
+          "problems": [
+            { "question": "Tính chu vi hình chữ nhật có chiều dài 9 cm và chiều rộng 6 cm.", "expr": "(9 + 6) * 2", "answer": "30", "simplest": false, "unit": "cm" },
+            { "question": "Tính chu vi hình chữ nhật có chiều dài 15 m và chiều rộng 10 m.", "expr": "(15 + 10) * 2", "answer": "50", "simplest": false, "unit": "m" },
+            { "question": "Tính chu vi hình vuông có cạnh 7 cm.", "expr": "7 * 4", "answer": "28", "simplest": false, "unit": "cm" },
+            { "question": "Tính chu vi hình vuông có cạnh 25 m.", "expr": "25 * 4", "answer": "100", "simplest": false, "unit": "m" },
+            { "question": "Một hình vuông có chu vi 36 cm. Hỏi cạnh hình vuông dài bao nhiêu xăng-ti-mét?", "expr": "36 / 4", "answer": "9", "simplest": false, "unit": "cm" },
+            { "question": "Một hình chữ nhật có chu vi 30 m và chiều dài 9 m. Tính chiều rộng của hình chữ nhật đó.", "expr": "30 / 2 - 9", "answer": "6", "simplest": false, "unit": "m" },
+            { "question": "Một khung ảnh hình chữ nhật dài 1 m, rộng 60 cm. Tính chu vi khung ảnh theo đơn vị xăng-ti-mét.", "expr": "(100 + 60) * 2", "answer": "320", "simplest": false, "unit": "cm" },
+            { "question": "Bác Tư rào quanh một mảnh vườn hình chữ nhật dài 20 m, rộng 12 m. Hỏi hàng rào dài bao nhiêu mét?", "expr": "(20 + 12) * 2", "answer": "64", "simplest": false, "unit": "m" },
+            { "question": "Một viên gạch hình vuông có cạnh 40 cm. Tính chu vi viên gạch đó.", "expr": "40 * 4", "answer": "160", "simplest": false, "unit": "cm" }
+          ]
+        }
       ]
     },
     {
