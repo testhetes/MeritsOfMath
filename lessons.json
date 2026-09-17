@@ -71,9 +71,69 @@
     {
       "grade": 2,
       "lessons": [
-        { "id": "phep-cong-co-nho-trong-pham-vi-100", "title": "Phép cộng có nhớ trong phạm vi 100" },
-        { "id": "phep-tru-co-nho-trong-pham-vi-100", "title": "Phép trừ có nhớ trong phạm vi 100" },
-        { "id": "bang-nhan-2-3-4-5", "title": "Bảng nhân 2, 3, 4, 5" }
+        {
+          "id": "phep-cong-co-nho-trong-pham-vi-100",
+          "title": "Phép cộng có nhớ trong phạm vi 100",
+          "ghiNho": [
+            "Khi tổng các chữ số hàng đơn vị lớn hơn 9, em viết chữ số hàng đơn vị của tổng và nhớ 1 chục sang hàng chục.",
+            "Đặt tính thẳng cột: hàng đơn vị thẳng hàng đơn vị, hàng chục thẳng hàng chục.",
+            "Cộng hàng đơn vị trước, rồi cộng hàng chục và thêm 1 đã nhớ. Ví dụ \\(27 + 15 = 42\\).",
+            "Kiểm tra bằng cách tách số: \\(27 + 15 = 27 + 10 + 5 = 42\\)."
+          ],
+          "problems": [
+            { "question": "Tính \\(36 + 27\\).", "expr": "36 + 27", "answer": "63", "simplest": false },
+            { "question": "Tính \\(48 + 35\\).", "expr": "48 + 35", "answer": "83", "simplest": false },
+            { "question": "Tính \\(19 + 56\\).", "expr": "19 + 56", "answer": "75", "simplest": false },
+            { "question": "Tính \\(67 + 8\\).", "expr": "67 + 8", "answer": "75", "simplest": false },
+            { "question": "Tính \\(29 + 29\\).", "expr": "29 + 29", "answer": "58", "simplest": false },
+            { "question": "Tính \\(64 + 36\\).", "expr": "64 + 36", "answer": "100", "simplest": false },
+            { "question": "Nhà Minh nuôi 38 con gà và 25 con vịt. Hỏi nhà Minh nuôi tất cả bao nhiêu con gà và vịt?", "expr": "38 + 25", "answer": "63", "simplest": false, "unit": "con" },
+            { "question": "Thùng thứ nhất có 47 quả cam, thùng thứ hai có 46 quả cam. Hỏi cả hai thùng có bao nhiêu quả cam?", "expr": "47 + 46", "answer": "93", "simplest": false, "unit": "quả" },
+            { "question": "Lớp 2A trồng được 29 cây. Lớp 2B trồng được nhiều hơn lớp 2A 14 cây. Hỏi lớp 2B trồng được bao nhiêu cây?", "expr": "29 + 14", "answer": "43", "simplest": false, "unit": "cây" }
+          ]
+        },
+        {
+          "id": "phep-tru-co-nho-trong-pham-vi-100",
+          "title": "Phép trừ có nhớ trong phạm vi 100",
+          "ghiNho": [
+            "Khi chữ số hàng đơn vị của số bị trừ bé hơn của số trừ, em mượn 1 chục từ hàng chục.",
+            "Một chục mượn được là 10 đơn vị. Với \\(52 - 27\\), hàng đơn vị thành \\(12 - 7 = 5\\).",
+            "Đã mượn 1 chục thì hàng chục của số bị trừ bớt đi 1: \\(4 - 2 = 2\\). Vậy \\(52 - 27 = 25\\).",
+            "Kiểm tra: lấy hiệu cộng số trừ, phải được số bị trừ: \\(25 + 27 = 52\\)."
+          ],
+          "problems": [
+            { "question": "Tính \\(54 - 28\\).", "expr": "54 - 28", "answer": "26", "simplest": false },
+            { "question": "Tính \\(82 - 47\\).", "expr": "82 - 47", "answer": "35", "simplest": false },
+            { "question": "Tính \\(70 - 36\\).", "expr": "70 - 36", "answer": "34", "simplest": false },
+            { "question": "Tính \\(91 - 9\\).", "expr": "91 - 9", "answer": "82", "simplest": false },
+            { "question": "Tính \\(63 - 45\\).", "expr": "63 - 45", "answer": "18", "simplest": false },
+            { "question": "Tính \\(100 - 58\\).", "expr": "100 - 58", "answer": "42", "simplest": false },
+            { "question": "Cửa hàng có 65 quả bóng, đã bán 38 quả. Hỏi cửa hàng còn lại bao nhiêu quả bóng?", "expr": "65 - 38", "answer": "27", "simplest": false, "unit": "quả" },
+            { "question": "Sợi dây dài 80 cm, bạn Hà cắt đi 24 cm. Hỏi sợi dây còn lại dài bao nhiêu xăng-ti-mét?", "expr": "80 - 24", "answer": "56", "simplest": false, "unit": "cm" },
+            { "question": "Trong vườn có 41 cây, trong đó có 17 cây cam, còn lại là cây bưởi. Hỏi trong vườn có bao nhiêu cây bưởi?", "expr": "41 - 17", "answer": "24", "simplest": false, "unit": "cây" }
+          ]
+        },
+        {
+          "id": "bang-nhan-2-3-4-5",
+          "title": "Bảng nhân 2, 3, 4, 5",
+          "ghiNho": [
+            "Phép nhân là cách viết gọn phép cộng các số bằng nhau: \\(3 + 3 + 3 + 3 = 3 \\times 4 = 12\\).",
+            "Trong \\(3 \\times 4 = 12\\): 3 và 4 là các thừa số, 12 là tích.",
+            "Đổi chỗ hai thừa số thì tích không thay đổi: \\(3 \\times 4 = 4 \\times 3\\).",
+            "Nhân với 2 là gấp đôi. Tích trong bảng nhân 5 luôn tận cùng bằng 0 hoặc 5."
+          ],
+          "problems": [
+            { "question": "Tính \\(2 \\times 7\\).", "expr": "2 * 7", "answer": "14", "simplest": false },
+            { "question": "Tính \\(3 \\times 6\\).", "expr": "3 * 6", "answer": "18", "simplest": false },
+            { "question": "Tính \\(4 \\times 9\\).", "expr": "4 * 9", "answer": "36", "simplest": false },
+            { "question": "Tính \\(5 \\times 8\\).", "expr": "5 * 8", "answer": "40", "simplest": false },
+            { "question": "Viết thành phép nhân rồi tính: \\(4 + 4 + 4 + 4 + 4\\).", "expr": "4 * 5", "answer": "20", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(3 \\times \\, ? = 27\\)", "expr": "27 / 3", "answer": "9", "simplest": false },
+            { "question": "Biết \\(5 \\times 7 = 35\\). Tính \\(7 \\times 5\\).", "expr": "7 * 5", "answer": "35", "simplest": false },
+            { "question": "Mỗi bình có 3 bông hoa. Hỏi 7 bình như thế có tất cả bao nhiêu bông hoa?", "expr": "3 * 7", "answer": "21", "simplest": false, "unit": "bông" },
+            { "question": "Mỗi con thỏ có 4 chân. Hỏi 6 con thỏ có tất cả bao nhiêu chân?", "expr": "4 * 6", "answer": "24", "simplest": false, "unit": "chân" }
+          ]
+        }
       ]
     },
     {

@@ -162,7 +162,6 @@ def test_extras_are_a_nang_cao_tab_of_practice_lessons():
 # Lessons still waiting for their Ghi nhớ and practice. Each grade's ids leave this set as its
 # practice is written (content pass, 2026-09-17); every other lesson must have both.
 AWAITING_PRACTICE = {
-    "phep-cong-co-nho-trong-pham-vi-100", "phep-tru-co-nho-trong-pham-vi-100", "bang-nhan-2-3-4-5",
     "bang-nhan-chia-6-7-8-9", "chia-het-va-chia-co-du", "chu-vi-hinh-chu-nhat-hinh-vuong",
     "phan-so-va-cach-doc", "cong-tru-phan-so", "dau-hieu-chia-het",
     "so-thap-phan", "phep-tinh-voi-so-thap-phan", "ti-so-phan-tram", "dien-tich-va-the-tich",
