@@ -130,17 +130,25 @@ window.MathPad = (function () {
 
     // ---- pop-up keypad (mouse and keyboard) ----
 
+    // An answer pop-up hangs below its whole card, not just below the answer box, so the feedback
+    // and the highlighted "Cô gợi ý" after a wrong answer stay visible. A chat pop-up sits above the
+    // chat box, and body.chat-popup-open gives the conversation room to scroll its newest message
+    // above it (chat.css).
     function openPopup(mode, host, button, field) {
         closePopup();
         const node = document.createElement('div');
         node.className = 'mathpad-popup ' + mode;
         node.setAttribute('role', 'group');
         node.setAttribute('aria-label', 'Bàn phím toán');
+        keepFocus(node);   // a press on the card's padding or gaps must not blur the field either
         fillKeys(node, mode);
         host.appendChild(node);
         popup = { node: node, button: button, field: field, mode: mode };
         button.setAttribute('aria-pressed', 'true');
-        if (mode === 'chat') chatOn = true;
+        if (mode === 'chat') {
+            chatOn = true;
+            document.body.classList.add('chat-popup-open');
+        }
         node.scrollIntoView({ block: 'nearest' });
     }
 
@@ -148,7 +156,10 @@ window.MathPad = (function () {
         if (!popup) return;
         popup.node.remove();
         popup.button.setAttribute('aria-pressed', 'false');
-        if (popup.mode === 'chat') chatOn = false;
+        if (popup.mode === 'chat') {
+            chatOn = false;
+            document.body.classList.remove('chat-popup-open');
+        }
         popup = null;
     }
 
@@ -199,13 +210,16 @@ window.MathPad = (function () {
     }
 
     function setChat(on) {
-        if (usePopup()) {
-            if (on) {
-                openPopup('chat', els.composer, els.toggle, els.input);
-                els.onChatOpen();
-            } else {
-                closePopup();
-            }
+        // Closing follows what is open, not the current pointer: a 2-in-1 laptop can switch between
+        // touch and a trackpad while a keypad is showing.
+        if (!on && popup && popup.mode === 'chat') {
+            closePopup();
+            els.input.focus();
+            return;
+        }
+        if (on && usePopup()) {
+            openPopup('chat', els.composer, els.toggle, els.input);
+            els.onChatOpen();
             els.input.focus();
             return;
         }
@@ -251,11 +265,13 @@ window.MathPad = (function () {
         }
     }
 
+    // The input must already be in its row (js/lessons.js attaches it after appending it): the
+    // button is inserted right after it.
     function attachPopupButton(input) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'btn tone-lavender keypad-btn';
-        button.setAttribute('aria-label', 'Mở bàn phím toán');
+        button.setAttribute('aria-label', 'Bàn phím toán');
         button.setAttribute('aria-pressed', 'false');
         const icon = document.createElement('span');
         icon.className = 'keypad-icon';
@@ -266,7 +282,7 @@ window.MathPad = (function () {
             if (popup && popup.field === input) {
                 closePopup();
             } else if (!input.disabled) {
-                openPopup('answer', input.parentElement, button, input);
+                openPopup('answer', input.closest('.msg') || input.parentElement, button, input);
                 input.focus();
             }
         });
@@ -322,11 +338,19 @@ window.MathPad = (function () {
         els.pad.setAttribute('aria-label', 'Bàn phím toán');
         document.addEventListener('pointerdown', (event) => {
             pointerIsDown = true;
-            // A press outside the pop-up, its button and its field closes the pop-up.
-            if (popup && !popup.node.contains(event.target) && !popup.button.contains(event.target)
-                    && event.target !== popup.field) {
-                closePopup();
-            }
+            if (!popup) return;
+            // A press outside the pop-up, its button and its field closes the pop-up. For the chat
+            // pop-up, the whole chat box counts as inside, so clicking "Gửi" keeps it open.
+            const target = event.target;
+            if (popup.node.contains(target) || popup.button.contains(target) || target === popup.field) return;
+            if (popup.mode === 'chat' && els.composer.contains(target)) return;
+            // After the click, not now: removing the pop-up shrinks the conversation's scroll range,
+            // and content moving between press and release sent the click elsewhere (the card's
+            // own "Kiểm tra" needed two clicks). A pop-up opened by this same click is left alone.
+            const open = popup;
+            afterTap(() => {
+                if (popup === open) closePopup();
+            });
         }, true);
         document.addEventListener('pointerup', () => { pointerIsDown = false; }, true);
         document.addEventListener('pointercancel', () => { pointerIsDown = false; }, true);

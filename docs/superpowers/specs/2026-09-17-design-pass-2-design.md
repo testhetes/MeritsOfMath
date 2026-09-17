@@ -14,7 +14,7 @@ children") over Bricolage Grotesque and Unbounded + Lexend. Both faces have a `v
 | Role | Font | Where |
 |---|---|---|
 | display | Baloo 2 800 | greeting, logo letter, keypad digits, stickers |
-| heading | Baloo 2 700 | header title, section headings, lesson card titles, finish line |
+| heading | Baloo 2 700; 800 for the header title, section headings and finish line | header title, section headings, lesson card titles, finish line |
 | body | Nunito 600 (700 for emphasis) | running text, bubbles, inputs |
 | buttons and tags | Nunito 800 | all buttons; tags uppercase with 0.05em tracking |
 
@@ -92,21 +92,25 @@ Which keypad a field gets depends on the pointer, not the width:
   - Focusing an answer box does **not** open anything.
   - `inputmode` is not set, and typing works as now, filtered to digits and one "/".
 - **Keypad button.**
-  - A square button (⌨, `aria-label="Mở bàn phím toán"`, lavender, 48px) sits right after the
-    answer box.
+  - A square button (a keypad icon, `aria-label="Bàn phím toán"` with `aria-pressed`, lavender,
+    48px) sits right after the answer box.
   - It toggles a pop-up keypad with the answer layout (7 8 9 ⌫ / 4 5 6 ▭/▭ / 1 2 3 Kiểm tra / 0).
   - While open, it shows the pressed state: `translate(1px,1px)` and a 2px bright-lavender shadow.
 - **The pop-up.**
   - It is a card: `--surface`, 3px ink outline, 8px `--shadow-color` shadow, 12px padding, 4-column
     grid of 52px keys.
-  - It is anchored to the answer row (`position: absolute` inside the row) below the box, with a
-    small caret pointing at the box.
+  - It hangs below the whole problem card (`position: absolute` inside the card), with a small
+    caret pointing up at the card. Placing it below the answer row covered the wrong-answer feedback
+    and the highlighted "Cô gợi ý" (review, 2026-09-17).
+  - Both pop-ups are capped at `calc(100vw - 32px)` wide.
   - It scrolls into view inside the conversation when it opens.
   - Keys type into the box and never take focus. If the box doesn't have focus, the first key press
     focuses it.
 - **Closing.**
   - The pop-up closes on a pointer press outside it and its button, on Esc, or when the answer is
     right.
+  - An outside press closes it only after that click has finished. Closing mid-click shrank the
+    conversation's scroll range, so the click landed elsewhere.
   - A wrong answer leaves it open, so the child can correct the answer.
 
 ### Chat box (fine pointer)
@@ -115,8 +119,10 @@ Which keypad a field gets depends on the pointer, not the width:
 - It is anchored above the chat box's left edge (`position: absolute` inside the composer,
   `bottom: calc(100% + 12px)`).
 - The phone-keyboard switch (`inputmode`) is not used, since a desktop has no on-screen keyboard.
-- "ABC" closes the pop-up. So do Esc and a pointer press outside it and its toggle.
-- Sending keeps it open, as on phones.
+- "ABC" closes the pop-up. So do Esc and a pointer press outside the pop-up and the whole chat box.
+- Sending keeps it open, as on phones, whether with Enter or by clicking "Gửi".
+- While it is open, the conversation (or Home) gets 300px of bottom padding. The newest message
+  can then scroll above the pop-up instead of hiding under it.
 - The toggle's `aria-pressed` follows the open state.
 
 ### Shared
@@ -125,7 +131,10 @@ Which keypad a field gets depends on the pointer, not the width:
   container.
 - Only one keypad is open at a time. Opening the answer pop-up closes the chat pop-up, and the other
   way round.
-- `MathPad.reset()` (called by `renderAll`) closes any pop-up.
+- `MathPad.reset()` (called by `renderAll`) closes an answer pop-up, whose card is being rebuilt. It
+  keeps the chat pop-up, because sending the first message from Home runs `renderAll`.
+- Closing follows what is open, not the current pointer type, so a 2-in-1 laptop that switches
+  between touch and a trackpad can always close its keypad.
 - The pop-up has `role="group"` and `aria-label="Bàn phím toán"`, like the docked keypad.
 
 ## Testing

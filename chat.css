@@ -9,6 +9,7 @@
     --ink: #F3F3F6;
     --text: #ECECED;
     --placeholder: #BDBDC7;
+    --divider: #3A3948;       /* decorative lines only, never text */
     --on-fill: #FFFFFF;
 
     --yellow: #8A6A00;      --yellow-bright: #FFD23F;
@@ -380,8 +381,10 @@ body {
     border: 3px solid var(--ink);
     box-shadow: var(--shadow-lg);
 }
-.mathpad-popup.answer { top: calc(100% + 14px); left: 0; width: 320px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.mathpad-popup.chat { bottom: calc(100% + 14px); left: 16px; width: 440px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+/* The answer pop-up hangs below its whole card, so wrong-answer feedback and the highlighted hint
+   stay visible. Both are capped to the window for narrow mouse windows. */
+.mathpad-popup.answer { top: calc(100% + 14px); left: 12px; width: 320px; max-width: calc(100vw - 32px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mathpad-popup.chat { bottom: calc(100% + 14px); left: 16px; width: 440px; max-width: calc(100vw - 32px); grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .mathpad-popup .key { min-height: 52px; }
 .mathpad-popup::before {
     content: '';
@@ -399,6 +402,10 @@ body {
 .keypad-icon { display: grid; grid-template-columns: repeat(3, 6px); gap: 3px; }
 .keypad-icon i { display: block; width: 6px; height: 6px; background: currentColor; }
 .keypad-btn[aria-pressed="true"] { transform: translate(1px, 1px); box-shadow: 2px 2px 0 0 var(--bright); }
+.keypad-btn[aria-pressed="true"]:active, .mathpad-toggle[aria-pressed="true"]:active { transform: translate(3px, 3px); box-shadow: none; }
+/* While the chat pop-up is open, the conversation (or Home) gets room below its end, so the newest
+   message scrolls above the pop-up instead of hiding under it (pop-up about 262px + 14px gap). */
+.chat-popup-open .messages, .chat-popup-open .home { padding-bottom: 300px; }
 .answer-input:disabled + .keypad-btn { display: none; }
 
 @media (max-width: 600px) {
@@ -417,7 +424,7 @@ body {
 
     .home { padding: 0 40px 36px; gap: 24px; }
     .home > * { width: 100%; max-width: 1060px; margin-inline: auto; }
-    .home-top { padding: 36px 96px 26px; min-height: 180px; text-align: center; border-bottom: 3px dashed #3A3948; }
+    .home-top { padding: 36px 96px 26px; min-height: 180px; text-align: center; border-bottom: 3px dashed var(--divider); }
     .home-greeting { font-size: 3.2rem; line-height: 1.05; max-width: 760px; margin: 0 auto 10px; }
     .home-sub { display: block; margin: 0; font-weight: 700; font-size: 1.25rem; }
     .stickers { inset: 0; width: auto; height: auto; pointer-events: none; }
@@ -433,7 +440,7 @@ body {
     .lesson-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
     .lesson-card { min-height: 128px; padding: 18px 20px; justify-content: space-between; }
     .lesson-title { font-size: 1.6rem; line-height: 1.1; }
-    .tag { font-size: 0.85rem; padding: 3px 9px; }
+    .lesson-card .tag { font-size: 0.85rem; padding: 3px 9px; }
 
     .messages { padding: 28px max(40px, calc((100% - 820px) / 2)); gap: 20px; }
     .msg { font-size: 1.1rem; }
