@@ -21,7 +21,8 @@ window.Lessons = (function () {
             .then((json) => {
                 if (json && Array.isArray(json.grades)) {
                     lessonsById.clear();
-                    json.grades.forEach((grade) => grade.lessons.forEach((lesson) => lessonsById.set(lesson.id, lesson)));
+                    json.grades.concat(json.extras || []).forEach((group) =>
+                        group.lessons.forEach((lesson) => lessonsById.set(lesson.id, lesson)));
                     data = json;
                 }
             })
@@ -184,20 +185,41 @@ window.Lessons = (function () {
     const GRADE_TONES = { 1: 'coral', 2: 'orange', 3: 'yellow', 4: 'green', 5: 'blue' };
     const STICKERS = ['½', '×', '÷', '='];   // the fourth shows on desktop only (chat.css)
 
-    function currentGrade() {
-        let wanted = data.defaultGrade;
+    // Home's tabs: one per grade, then one per extra topic such as "Nâng cao". meritsGrade stores
+    // the grade number or the extra's id.
+    function groups() {
+        const grades = data.grades.map((g) => ({
+            key: String(g.grade),
+            label: 'Lớp ' + g.grade,
+            heading: 'Các bài học lớp ' + g.grade,
+            tone: GRADE_TONES[g.grade] || 'neutral',
+            lessons: g.lessons
+        }));
+        const extras = (data.extras || []).map((x) => ({
+            key: x.id,
+            label: x.label + ' ★',
+            heading: x.title,
+            note: x.note,
+            tone: 'lavender',
+            lessons: x.lessons
+        }));
+        return grades.concat(extras);
+    }
+
+    function currentGroup(list) {
+        let saved = null;
         try {
-            const saved = Number(localStorage.getItem(GRADE_KEY));
-            if (data.grades.some((grade) => grade.grade === saved)) wanted = saved;
+            saved = localStorage.getItem(GRADE_KEY);
         } catch {
             // Storage unavailable: use the default grade.
         }
-        return data.grades.find((grade) => grade.grade === wanted) || data.grades[0];
+        return list.find((group) => group.key === saved) ||
+            list.find((group) => group.key === String(data.defaultGrade)) || list[0];
     }
 
-    function saveGrade(number) {
+    function saveGroup(key) {
         try {
-            localStorage.setItem(GRADE_KEY, String(number));
+            localStorage.setItem(GRADE_KEY, key);
         } catch {
             // Storage unavailable: the choice lasts until the page reloads.
         }
@@ -205,7 +227,8 @@ window.Lessons = (function () {
 
     function renderHome(container, onPick) {
         container.textContent = '';
-        const grade = currentGrade();
+        const list = groups();
+        const current = currentGroup(list);
 
         const top = el('div', 'home-top');
         top.appendChild(el('p', 'home-greeting', 'Chào em! Hôm nay em muốn học bài nào?'));
@@ -222,28 +245,28 @@ window.Lessons = (function () {
         container.appendChild(top);
 
         const chips = el('div', 'grade-chips');
-        data.grades.forEach((g) => {
-            const tone = GRADE_TONES[g.grade] || 'neutral';
-            const chip = button('Lớp ' + g.grade, 'btn grade-chip tone-' + tone, () => {
-                saveGrade(g.grade);
+        list.forEach((group) => {
+            const chip = button(group.label, 'btn grade-chip tone-' + group.tone, () => {
+                saveGroup(group.key);
                 renderHome(container, onPick);
             });
-            chip.setAttribute('aria-pressed', String(g.grade === grade.grade));
+            chip.setAttribute('aria-pressed', String(group === current));
             chips.appendChild(chip);
         });
         container.appendChild(chips);
 
-        container.appendChild(el('h2', 'home-heading', 'Các bài học lớp ' + grade.grade));
-        const list = el('div', 'lesson-list');
-        practiceFirst(grade.lessons).forEach((lesson) => {
+        container.appendChild(el('h2', 'home-heading', current.heading));
+        if (current.note) container.appendChild(el('p', 'home-note', current.note));
+        const lessonList = el('div', 'lesson-list');
+        practiceFirst(current.lessons).forEach((lesson) => {
             const card = button(undefined, 'btn lesson-card', () => onPick(lesson.id));
             card.appendChild(el('span', 'lesson-title', lesson.title));
             card.appendChild(hasPractice(lesson)
                 ? el('span', 'tag tone-orange', 'Ghi nhớ · Luyện tập')
                 : el('span', 'tag tone-blue', 'Hỏi cô'));
-            list.appendChild(card);
+            lessonList.appendChild(card);
         });
-        container.appendChild(list);
+        container.appendChild(lessonList);
     }
 
     // Lessons with Ghi nhớ and practice come first; within each group, lessons.json's order.

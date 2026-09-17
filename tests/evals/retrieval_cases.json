@@ -78,5 +78,9 @@
   {
     "query": "Đề toán kể chuyện về phân số thì em làm sao biết phải chọn phép tính nào, lại hay quên ghi đơn vị?",
     "expect_doc_id": "giai-toan-voi-phep-nhan-phan-so"
+  },
+  {
+    "query": "Lấy 6 nhân với tổng của 10 và 3 thì có được tách ra nhân từng số rồi cộng lại không ạ?",
+    "expect_doc_id": "nhan-mot-so-voi-mot-tong"
   }
 ]

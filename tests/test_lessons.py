@@ -23,6 +23,8 @@ ANSWER_RE = re.compile(r"^(0|[1-9]\d*)(/[1-9]\d*|,\d*[1-9])?$")
 DECIMAL_LITERAL = re.compile(r"^\d+\.\d+$")
 LESSON_KEYS = {"id", "title", "ghiNho", "problems"}
 PROBLEM_KEYS = {"question", "expr", "answer", "simplest", "unit"}
+EXTRA_KEYS = {"id", "label", "title", "note", "lessons"}
+WHOLE_NUMBER_RE = re.compile(r"^(0|[1-9]\d*)$")
 
 # // and % let a chia có dư problem write its quotient and remainder as 17 // 5 and 17 % 5.
 _OPS = {
@@ -72,8 +74,14 @@ def canonical_answer(value):
     return f"{value.numerator}/{value.denominator}"
 
 
+def _groups():
+    """Grades and extras, each with the content folder its Markdown lives in."""
+    grades = [(f"grade{g['grade']}", g) for g in DATA["grades"]]
+    return grades + [(x["id"], x) for x in DATA.get("extras", [])]
+
+
 def _lessons():
-    return [(g["grade"], lesson) for g in DATA["grades"] for lesson in g["lessons"]]
+    return [(folder, lesson) for folder, group in _groups() for lesson in group["lessons"]]
 
 
 def _problems():
@@ -116,11 +124,11 @@ def test_lesson_ids_are_unique():
     assert len(ids) == len(set(ids)), sorted(i for i in ids if ids.count(i) > 1)
 
 
-def test_every_content_file_is_listed_once_under_its_grade():
-    files = sorted(CONTENT_DIR.glob("grade*/*.md"))
+def test_every_content_file_is_listed_once_under_its_folder():
+    files = sorted(CONTENT_DIR.glob("*/*.md"))
     assert files, "no content files found"
-    listed = {(grade, lesson["id"]) for grade, lesson in _lessons()}
-    on_disk = {(int(f.parent.name.removeprefix("grade")), f.stem) for f in files}
+    listed = {(folder, lesson["id"]) for folder, lesson in _lessons()}
+    on_disk = {(f.parent.name, f.stem) for f in files}
     assert listed == on_disk, {
         "listed but no file": sorted(listed - on_disk),
         "file but not listed": sorted(on_disk - listed),
@@ -128,10 +136,27 @@ def test_every_content_file_is_listed_once_under_its_grade():
 
 
 def test_titles_match_the_content_headings():
-    for grade, lesson in _lessons():
-        path = CONTENT_DIR / f"grade{grade}" / f"{lesson['id']}.md"
+    for folder, lesson in _lessons():
+        path = CONTENT_DIR / folder / f"{lesson['id']}.md"
         heading = path.read_text(encoding="utf-8").splitlines()[0]
         assert heading == f"# {lesson['title']}", (lesson["id"], heading)
+
+
+def test_extras_are_a_nang_cao_tab_of_practice_lessons():
+    """The user asked for a bonus tab beside the grade chips, starting with "Nhóm nhân tử" without
+    variables (2026-09-17). Every lesson in it has Ghi nhớ and practice with whole-number answers."""
+    extras = DATA["extras"]
+    assert [x["id"] for x in extras] == ["nang-cao"]
+    for extra in extras:
+        assert set(extra) == EXTRA_KEYS, (extra["id"], set(extra) ^ EXTRA_KEYS)
+        assert re.fullmatch(r"[a-z0-9-]+", extra["id"]) and not extra["id"].startswith("grade")
+        for key in ("label", "title", "note"):
+            assert extra[key].strip(), (extra["id"], key)
+        assert extra["lessons"], extra["id"]
+        for lesson in extra["lessons"]:
+            assert "ghiNho" in lesson and "problems" in lesson, lesson["id"]
+            for i, problem in enumerate(lesson["problems"]):
+                assert WHOLE_NUMBER_RE.match(problem["answer"]), (lesson["id"], i + 1, problem["answer"])
 
 
 def test_lesson_fields():

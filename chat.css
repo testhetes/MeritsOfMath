@@ -186,6 +186,8 @@ body {
 .grade-chip:active { transform: translate(2px, 2px); box-shadow: none; }
 
 .home-heading { margin: 0; font-family: var(--font-heading); font-weight: 800; font-size: 1.2rem; }
+/* An extra topic's one-line note under its heading ("Dành cho học sinh lớp 4–5 thích thử thách."). */
+.home-note { margin: -10px 0 0; font-family: var(--font-body); font-weight: 700; }
 .lesson-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .lesson-card {
     display: flex;
@@ -439,6 +441,7 @@ body {
     .grade-chips { justify-content: center; gap: 14px; }
     .grade-chip { min-height: 52px; padding: 0 24px; font-size: 1.35rem; }
     .home-heading { font-size: 1.5rem; }
+    .home-note { font-size: 1.1rem; }
     .lesson-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
     .lesson-card { min-height: 128px; padding: 18px 20px; justify-content: space-between; }
     .lesson-title { font-size: 1.6rem; line-height: 1.1; }

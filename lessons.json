@@ -129,5 +129,36 @@
         { "id": "dien-tich-va-the-tich", "title": "Diện tích và thể tích" }
       ]
     }
+  ],
+  "extras": [
+    {
+      "id": "nang-cao",
+      "label": "Nâng cao",
+      "title": "Nâng cao · Nhóm nhân tử",
+      "note": "Dành cho học sinh lớp 4–5 thích thử thách.",
+      "lessons": [
+        {
+          "id": "nhan-mot-so-voi-mot-tong",
+          "title": "Nhân một số với một tổng, một hiệu",
+          "ghiNho": [
+            "Nhân một số với một tổng: nhân số đó với từng số hạng, rồi cộng các kết quả. \\(a \\times (b + c) = a \\times b + a \\times c\\)",
+            "Nhân một số với một hiệu: nhân số đó với số bị trừ và với số trừ, rồi trừ hai kết quả. \\(a \\times (b - c) = a \\times b - a \\times c\\)",
+            "Tính nhẩm: tách một thừa số thành số tròn chục cộng hoặc trừ một số nhỏ. Ví dụ \\(25 \\times 12 = 25 \\times 10 + 25 \\times 2 = 300\\).",
+            "Mọi số trong ngoặc đều phải được nhân, không bỏ sót số nào."
+          ],
+          "problems": [
+            { "question": "Tính bằng hai cách: \\(7 \\times (10 + 3)\\).", "expr": "7 * (10 + 3)", "answer": "91", "simplest": false },
+            { "question": "Tính bằng hai cách: \\(5 \\times (20 - 4)\\).", "expr": "5 * (20 - 4)", "answer": "80", "simplest": false },
+            { "question": "Điền số thích hợp vào chỗ dấu hỏi: \\(8 \\times (6 + 4) = 8 \\times 6 + 8 \\times \\, ?\\)", "expr": "4", "answer": "4", "simplest": false },
+            { "question": "Tính nhẩm: \\(35 \\times 11\\).", "expr": "35 * 11", "answer": "385", "simplest": false },
+            { "question": "Tính nhẩm: \\(45 \\times 9\\).", "expr": "45 * 9", "answer": "405", "simplest": false },
+            { "question": "Tính nhẩm: \\(12 \\times 102\\).", "expr": "12 * 102", "answer": "1224", "simplest": false },
+            { "question": "Tính nhẩm: \\(7 \\times 99\\).", "expr": "7 * 99", "answer": "693", "simplest": false },
+            { "question": "Mỗi hộp có 12 bút chì xanh và 8 bút chì đỏ. Hỏi 6 hộp như thế có tất cả bao nhiêu chiếc bút chì?", "expr": "6 * (12 + 8)", "answer": "120", "simplest": false, "unit": "chiếc" },
+            { "question": "Mỗi gói kẹo có 24 cái. An mua 11 gói. Hỏi An có bao nhiêu cái kẹo?", "expr": "24 * 11", "answer": "264", "simplest": false, "unit": "cái" }
+          ]
+        }
+      ]
+    }
   ]
 }
