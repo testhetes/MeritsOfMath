@@ -44,14 +44,19 @@ window.Lessons = (function () {
 
     // ---- answers ----
 
-    // A whole number or a fraction a/b, spaces ignored. At most 6 digits a part, so the
-    // cross-multiplication below stays exact. Anything else, a zero denominator included, is null.
+    // A whole number, a fraction a/b, or a decimal written with "," or "." (4,25), spaces ignored.
+    // At most 6 digits a part, and 4 after the decimal separator. Anything else, a zero denominator
+    // included, is null. Values are BigInt, so cross-multiplying below stays exact.
+    const ANSWER_SHAPE = /^(\d{1,6})(?:\/(\d{1,6})|[.,](\d{1,4}))?$/;
+
     function parseAnswer(text) {
-        const match = String(text).replace(/\s+/g, '').match(/^(\d{1,6})(?:\/(\d{1,6}))?$/);
+        const match = String(text).replace(/\s+/g, '').match(ANSWER_SHAPE);
         if (!match) return null;
-        const num = Number(match[1]);
-        const den = match[2] === undefined ? 1 : Number(match[2]);
-        return den === 0 ? null : { num: num, den: den };
+        if (match[3] !== undefined) {
+            return { num: BigInt(match[1] + match[3]), den: 10n ** BigInt(match[3].length) };
+        }
+        const den = match[2] === undefined ? 1n : BigInt(match[2]);
+        return den === 0n ? null : { num: BigInt(match[1]), den: den };
     }
 
     function gcd(a, b) {
@@ -61,13 +66,14 @@ window.Lessons = (function () {
         return a;
     }
 
-    // An equivalent fraction is correct (6/8 for 3/4) unless the problem asks to simplify.
+    // Any equal value is correct: 6/8 for 3/4, and 4,250, 4.25 or 17/4 for 4,25. The one exception
+    // is a problem that asks to simplify, and that only concerns an answer written as a fraction.
     function checkAnswer(text, problem) {
         const given = parseAnswer(text);
         if (!given) return 'invalid';
         const expected = parseAnswer(problem.answer);
         if (given.num * expected.den !== expected.num * given.den) return 'wrong';
-        if (problem.simplest && gcd(given.num, given.den) !== 1) return 'not-simplest';
+        if (problem.simplest && String(text).includes('/') && gcd(given.num, given.den) !== 1n) return 'not-simplest';
         return 'correct';
     }
 
@@ -286,7 +292,7 @@ window.Lessons = (function () {
         correct: 'Giỏi quá! Em làm đúng rồi.',
         'not-simplest': 'Đúng rồi, nhưng em rút gọn được nữa đấy.',
         wrong: 'Chưa đúng rồi, em thử lại nhé.',
-        invalid: 'Em viết số hoặc phân số, ví dụ 3/4 nhé.'
+        invalid: 'Em viết đủ số nhé, ví dụ 12, 3/4 hoặc 4,25.'
     };
 
     function problemCard(lesson, entry, ctx) {

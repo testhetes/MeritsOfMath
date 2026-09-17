@@ -1,16 +1,18 @@
 // The maths keypad. On a phone or tablet it is docked under the chat box: in a practice answer box
-// it replaces the phone keyboard (digits, the fraction bar, Kiểm tra), and in the chat box the
-// "123 ×÷" button swaps the phone keyboard for maths symbols, with "ABC" swapping back. On a
-// computer with a mouse it is a pop-up card anchored to its field instead: a keyboard-wide keypad
-// looked out of place on a desktop (2026-09-17), and a real keyboard types into the field anyway.
+// it replaces the phone keyboard (digits, the fraction bar, the decimal comma, Kiểm tra), and in
+// the chat box the "123 ×÷" button swaps the phone keyboard for maths symbols, with "ABC" swapping
+// back. On a computer with a mouse it is a pop-up card anchored to its field instead: a
+// keyboard-wide keypad looked out of place on a desktop (2026-09-17), and a real keyboard types
+// into the field anyway.
 //
 // The docked keypad is a normal child of the page's flex column (index.html #mathpad), not an
 // overlay, so opening it shrinks the conversation above it the same way the phone keyboard does.
 // Keys never take focus (pointerdown and mousedown are cancelled), so the field keeps its caret.
 window.MathPad = (function () {
-    // An answer is a whole number or a/b, at most 6 digits a side (js/lessons.js parseAnswer).
-    // Partial answers ("", "12", "12/") are allowed while typing; a leading "/" is not.
-    const PARTIAL_ANSWER = /^(\d{1,6}(\/\d{0,6})?)?$/;
+    // An answer is a whole number, a/b, or a decimal with "," or "." (js/lessons.js parseAnswer).
+    // Partial answers ("", "12", "12/", "4,") are allowed while typing. A leading "/" or "," is not,
+    // and neither is a second separator.
+    const PARTIAL_ANSWER = /^(\d{1,6}(\/\d{0,6}|[.,]\d{0,4})?)?$/;
 
     const DELETE = { text: '⌫', aria: 'Xoá', tone: 'coral', action: 'delete' };
     const FRACTION = { aria: 'Phân số', tone: 'cyan', fraction: true, insert: '/' };
@@ -30,7 +32,8 @@ window.MathPad = (function () {
             digit('4'), digit('5'), digit('6'), FRACTION,
             digit('1'), digit('2'), digit('3'),
             { text: 'Kiểm tra', tone: 'green', action: 'check', word: true, rows: 2 },
-            digit('0', { cols: 3 })
+            digit('0', { cols: 2 }),
+            { text: ',', aria: 'Dấu phẩy', insert: ',' }
         ],
         chat: [
             digit('7'), digit('8'), digit('9'), operator('+', 'Cộng'), operator('−', 'Trừ'), DELETE,

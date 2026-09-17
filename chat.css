@@ -363,6 +363,8 @@ body {
 .key.word { font-family: var(--font-body); font-weight: 800; font-size: 0.85rem; }
 /* The display face draws + − × : = small; operators get a larger size so they read at a glance. */
 .key.tone-lavender { font-size: 1.5rem; line-height: 1; }
+/* The decimal comma is a speck at digit size. */
+.key[aria-label="Dấu phẩy"] { font-size: 1.9rem; line-height: 1; }
 .frac-icon { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; vertical-align: middle; }
 .frac-icon i { display: block; width: 11px; height: 9px; border: 2px solid currentColor; }
 .frac-icon b { display: block; width: 18px; border-top: 2px solid currentColor; }
