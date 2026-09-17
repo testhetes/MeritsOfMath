@@ -114,6 +114,31 @@ def test_maths_keypad_is_wired_into_the_page():
     assert "mathpad.js" in "".join(_app_shell())
 
 
+def test_sticker_wiggle_is_not_cancelled_by_a_float_delay():
+    """The "=" sticker did not wiggle when clicked on a desktop (reported 2026-09-17). Its desktop
+    `.sticker:nth-child(4)` rule set animation-delay: -1.6s after `.sticker.wiggle`, with the same
+    specificity, so the 0.9s wiggle had ended before it began. Each sticker's float delay goes
+    through --float-delay, which the wiggle's own animation does not use."""
+    css = (ROOT / "chat.css").read_text(encoding="utf-8")
+    for block in re.findall(r"\.sticker:nth-child\(\d\)\s*\{([^}]*)\}", css):
+        assert "animation" not in block, f"a sticker rule sets its own animation: {block.strip()}"
+    assert "var(--float-delay" in css
+
+
+def test_answers_typed_in_the_chat_are_checked_by_the_app():
+    """The tutor praised 4200 typed in the chat for 43 × 27 + 43 × 73 = 4300 (reported 2026-09-17):
+    it does arithmetic without reasoning and never sees the answer. The device checks the numbers
+    against the problem (js/lessons.js answerNote), js/chat.js adds the result to what the tutor
+    reads, and the server's prompt tells the tutor to trust it. All three share one marker."""
+    marker = "Kiểm tra tự động"
+    lessons = (ROOT / "js" / "lessons.js").read_text(encoding="utf-8")
+    chat = (ROOT / "js" / "chat.js").read_text(encoding="utf-8")
+    server = (ROOT / "functions" / "api" / "chat.js").read_text(encoding="utf-8")
+    assert marker in lessons and "answerNote" in lessons
+    assert "Lessons.answerNote" in chat
+    assert marker in server
+
+
 def test_keypad_pops_up_on_mouse_and_keyboard_devices():
     """A full-width docked keypad looked out of place on a desktop (2026-09-17)."""
     js = (ROOT / "js" / "mathpad.js").read_text(encoding="utf-8")

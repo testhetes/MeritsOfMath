@@ -150,6 +150,41 @@ def test_tutor_does_not_steer_small_talk_into_retrieved_maths(base_url):
     )
 
 
+# Answers typed in the chat instead of the answer box. js/lessons.js answerNote checks them on the
+# device and adds a note the child never sees; the tutor must follow it instead of its own
+# arithmetic, which praised 4200 for 43 × 27 + 43 × 73 = 4300 (reported 2026-09-17). Each case is
+# (problem card text, child's message, the note js/lessons.js writes, whether the answer is right).
+_FACTOR_PROBLEM = "Bài 1: Tính nhanh: " + chr(92) + "(43 " + chr(92) + "times 27 + 43 " + chr(92) + "times 73" + chr(92) + ")."
+_DECIMAL_PROBLEM = "Bài 1: Tính " + chr(92) + "(4{,}7 + 2{,}85" + chr(92) + ")."
+CHECKED_ANSWERS = [
+    (_FACTOR_PROBLEM, "4200 đúng không ạ", "4200 không phải đáp số của Bài 1.", False),
+    (_FACTOR_PROBLEM, "4300 đúng không ạ", "4300 là đáp số đúng của Bài 1.", True),
+    (_DECIMAL_PROBLEM, "Em ra 7,45 phải không cô", "7,45 không phải đáp số của Bài 1.", False),
+    (_DECIMAL_PROBLEM, "Em ra 7,55 ạ", "7,55 là đáp số đúng của Bài 1.", True),
+]
+PRAISE = ("đúng rồi", "giỏi", "chính xác", "tuyệt")
+
+
+def test_tutor_follows_the_apps_answer_check(base_url):
+    """A pass RATE, for the same reason as the checks above."""
+    misjudged = []
+    for problem, message, note, right in CHECKED_ANSWERS:
+        r = requests.post(
+            f"{base_url}/api/chat",
+            json={"messages": [{"role": "assistant", "content": problem},
+                               {"role": "user", "content": f"{message}\n\n[Kiểm tra tự động: {note}]"}],
+                  "ground": True},
+            timeout=90,
+        )
+        assert r.status_code == 200, r.text
+        reply = unicodedata.normalize("NFC", r.json()["choices"][0]["message"]["content"]).lower()
+        if right and "đúng" not in reply:
+            misjudged.append(f"right answer not called right: {message!r} -> {reply!r}")
+        if not right and any(word in reply for word in PRAISE):
+            misjudged.append(f"wrong answer praised: {message!r} -> {reply!r}")
+    assert len(misjudged) <= 1, "\n".join(misjudged)
+
+
 # --------------------------------------------------------------------------
 # Offline guard: I1. MIN_PASSES = len(CASES) - 1 and the off-topic threshold
 # len(OFFTOPIC) - 1 both go NEGATIVE if their list is empty (e.g. a JSON

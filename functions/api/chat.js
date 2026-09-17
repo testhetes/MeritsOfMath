@@ -46,6 +46,9 @@ const MIN_SCORE = 0.30;
 // wait. Past this budget we answer ungrounded rather than make a child stare at dots.
 const RETRIEVAL_TIMEOUT_MS = 1800;
 
+// js/lessons.js answerNote starts its note to the tutor with this, as "[Kiểm tra tự động: …]".
+const ANSWER_CHECK_MARK = 'Kiểm tra tự động';
+
 const MAX_TOKENS_CAP = 300;   // hard ceiling so a leaked endpoint can't run up huge bills
 const MAX_MESSAGES = 40;      // cap conversation size per request
 
@@ -272,11 +275,14 @@ export async function onRequestPost({ request, env }) {
 // Most chat turns are short replies — "5", "em không biết", "dạ" — which retrieve nothing
 // on their own, so grounding would flicker on and off mid-problem. Including the previous
 // turn keeps the conversation anchored to the topic it started on.
+//
+// The app's answer check (see ANSWER_CHECK_MARK) is taken out first: "đáp số của Bài 1" says
+// nothing about the topic and would only pull the search toward whatever mentions đáp số.
 function buildRetrievalQuery(messages) {
     return messages
         .filter((m) => m && m.role === 'user' && typeof m.content === 'string')
         .slice(-2)
-        .map((m) => m.content.trim())
+        .map((m) => m.content.split('\n').filter((line) => !line.startsWith('[' + ANSWER_CHECK_MARK)).join('\n').trim())
         .filter(Boolean)
         .join('\n');
 }
@@ -341,7 +347,13 @@ function buildSocraticPrompt(chunks) {
         // Vietnamese teacher-to-pupil register. Without an explicit rule, Qwen drifted between
         // "em" (correct for a teacher speaking to a child) and "bạn" (peer register) across
         // consecutive replies measured on 2026-09-13.
-        '- Speak like a Vietnamese primary-school teacher: call the student "em" and refer to yourself as "cô". Never call the student "bạn".'
+        '- Speak like a Vietnamese primary-school teacher: call the student "em" and refer to yourself as "cô". Never call the student "bạn".',
+        // The tutor judged answers typed in the chat by its own arithmetic, without reasoning, and
+        // praised 4200 for 43 × 27 + 43 × 73 = 4300 (reported 2026-09-17). js/lessons.js
+        // answerNote now checks those numbers on the device. With this rule the same conversation
+        // was guided, not praised, 3 times in 3, and a right answer was called right 3 times in 3;
+        // with the note alone the tutor still doubted the right answer 3 times in 3.
+        '- A line in square brackets that starts with "' + ANSWER_CHECK_MARK + '" was added by the app, not written by the student, and the student cannot see it. The app compared the student\'s numbers exactly with the answer of the practice problem. Trust it over your own arithmetic. If it says a number is the answer, tell the student warmly that it is right. If it says a number is not the answer, never say or suggest that it is right. Never mention the check itself.'
     ];
 
     // Maths delimiters matter for rendering, not just style. The chat frontend runs replies

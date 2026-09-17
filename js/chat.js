@@ -313,13 +313,23 @@ window.Chat = (function () {
     }
 
     // What the tutor sees. The API takes { role, content } text only, so cards become the
-    // sentences they show, and neighbouring messages from the same speaker are joined.
+    // sentences they show, and neighbouring messages from the same speaker are joined. A child's
+    // message under a problem card carries the device's check of any answer in it
+    // (js/lessons.js answerNote); it is added here, so it is never saved or shown.
     function toApiMessages(entries) {
         const out = [];
+        let lastCard = null;
         entries.forEach((entry) => {
-            const parts = entry.card === undefined
-                ? [{ role: entry.role, content: entry.content }]
-                : window.Lessons.cardMessages(entry);
+            let parts;
+            if (entry.card !== undefined) {
+                lastCard = entry;
+                parts = window.Lessons.cardMessages(entry);
+            } else {
+                const note = entry.role === 'user' && lastCard && lastCard.card === 'problem'
+                    ? window.Lessons.answerNote(lastCard, entry.content)
+                    : null;
+                parts = [{ role: entry.role, content: note ? entry.content + '\n\n' + note : entry.content }];
+            }
             parts.forEach((part) => {
                 const last = out[out.length - 1];
                 if (last && last.role === part.role) {

@@ -78,6 +78,40 @@ window.Lessons = (function () {
         return 'correct';
     }
 
+    // A child may type an answer into the chat instead of the answer box: "4200 đúng không ạ". The
+    // tutor cannot judge it. It does arithmetic without reasoning and never sees the answer, and it
+    // praised 4200 for 43 × 27 + 43 × 73 = 4300 (reported 2026-09-17). So every number in the
+    // message is checked here against the problem on the card above, and the tutor is told the
+    // result in a line the child never sees. Numbers that are already in the question or the lesson
+    // title, and a problem number ("bài 1"), are left out. The note only ever names numbers the child
+    // wrote, so it cannot give the answer away. functions/api/chat.js tells the tutor to trust it.
+    const NUMBER_IN_TEXT = /(bài|câu)?\s*(\d+(?:\/\d+|[.,]\d+)?)/gi;
+
+    function numbersIn(text) {
+        return Array.from(String(text).matchAll(NUMBER_IN_TEXT), (m) => ({ label: m[1], value: m[2] }));
+    }
+
+    function answerNote(problemEntry, text) {
+        const lesson = find(problemEntry.lessonId);
+        const problem = lesson && lesson.problems[problemEntry.index];
+        if (!problem) return null;
+        const given = new Set(numbersIn(problem.question.replace(/\{,\}/g, ',') + ' ' + lesson.title)
+            .map((n) => n.value));
+        const candidates = [];
+        numbersIn(text).forEach((n) => {
+            if (n.label || given.has(n.value) || candidates.includes(n.value) || !parseAnswer(n.value)) return;
+            candidates.push(n.value);
+        });
+        if (candidates.length === 0) return null;
+        const which = 'Bài ' + (problemEntry.index + 1);
+        const right = candidates.find((c) => checkAnswer(c, problem) === 'correct');
+        const unsimplified = candidates.find((c) => checkAnswer(c, problem) === 'not-simplest');
+        const verdict = right ? right + ' là đáp số đúng của ' + which + '.'
+            : unsimplified ? unsimplified + ' bằng đáp số của ' + which + ' nhưng chưa rút gọn.'
+            : candidates.join('; ') + ' không phải đáp số của ' + which + '.';
+        return '[Kiểm tra tự động: ' + verdict + ']';
+    }
+
     // ---- conversation entries ----
 
     // Cards are replayed from localStorage, so a card is drawn only if everything it points at
@@ -406,6 +440,7 @@ window.Lessons = (function () {
         hasPractice: hasPractice,
         parseAnswer: parseAnswer,
         checkAnswer: checkAnswer,
+        answerNote: answerNote,
         isValidCard: isValidCard,
         renderHome: renderHome,
         renderCard: renderCard,
